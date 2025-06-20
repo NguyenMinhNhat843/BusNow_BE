@@ -69,6 +69,15 @@ export class AuthController {
     };
   }
 
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('accessToken');
+    return {
+      status: 200,
+      message: 'Đăng xuất thành công',
+    };
+  }
+
   @Post('send-otp')
   async sendOtp(@Body() body: { email: string }) {
     const otp = this.authService.generrateOtp();
