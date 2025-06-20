@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -15,6 +16,9 @@ async function bootstrap() {
       transform: true, // Tự động chuyển đổi kiểu dữ liệu
     }),
   );
+
+  // use cookie parser
+  app.use(cookieParser());
 
   // Bật CORS
   app.enableCors({

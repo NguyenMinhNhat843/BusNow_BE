@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { RegisterDTO } from './dto/RegisterDTO';
@@ -14,6 +15,7 @@ import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/LoginDTO';
 import { AuthGuard } from '@nestjs/passport';
 import { changePasswordDTO } from './dto/changePasswordDTO';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -46,8 +48,25 @@ export class AuthController {
   }
 
   @Get('login')
-  login(@Query() param: LoginDTO) {
-    return this.authService.login(param);
+  async login(
+    @Query() param: LoginDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const loginResult = await this.authService.login(param);
+
+    // Lưu token vào httpOnly cookie
+    res.cookie('accessToken', loginResult.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Chỉ sử dụng secure cookie trong môi trường production
+      sameSite: 'strict', // Cài đặt SameSite để bảo vệ chống CSRF
+      maxAge: 24 * 60 * 60 * 1000, // Cookie
+    });
+
+    return {
+      status: 200,
+      message: 'Đăng nhập thành công',
+      user: loginResult.existsUser,
+    };
   }
 
   @Post('send-otp')
