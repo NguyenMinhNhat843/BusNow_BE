@@ -22,7 +22,7 @@ async function bootstrap() {
 
   // Bật CORS
   app.enableCors({
-    origin: '*',
+    origin: 'http://localhost:4000', // Nếu bên client dùng withCredentials: true thì cần thay '*' bằng địa chỉ cụ thể của client
     methods: ['GET,HEAD,PUT,PATCH,POST,DELETE'],
     credentials: true,
   });
