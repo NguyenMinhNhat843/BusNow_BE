@@ -3,7 +3,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -44,8 +46,8 @@ export class AuthController {
   }
 
   @Get('login')
-  login(@Body() body: LoginDTO) {
-    return this.authService.login(body);
+  login(@Query() param: LoginDTO) {
+    return this.authService.login(param);
   }
 
   @Post('send-otp')
@@ -68,6 +70,9 @@ export class AuthController {
 
   @Post('send-reset-password-link')
   async sendReserPasswordLink(@Body() body: { email: string }) {
+    if (!body.email || body.email.trim() === '') {
+      throw new BadRequestException('Email không được để trống!');
+    }
     const { email } = body;
 
     await this.authService.sendResetPasswordLink(email);
