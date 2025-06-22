@@ -6,6 +6,13 @@ import { ConfigModule } from '@nestjs/config';
 import { S3Module } from './s3/s3.module';
 import { TransportProviderModule } from './transportProvider/transport.module';
 import { VehicleModule } from './vehicle/vehicle.module';
+import { Trip } from './trip/trip.entity';
+import { TripModule } from './trip/trip.module';
+import { User } from './user/user.entity';
+import { TransportProvider } from './transportProvider/transportProvider.entity';
+import { Vehicle } from './vehicle/vehicle.entity';
+import { Location } from './location/location.entity';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -27,6 +34,8 @@ import { VehicleModule } from './vehicle/vehicle.module';
     AuthModule,
     TransportProviderModule,
     VehicleModule,
+    TripModule,
+    LocationModule,
     S3Module,
   ],
   controllers: [],

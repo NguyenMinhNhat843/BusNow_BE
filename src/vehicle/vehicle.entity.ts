@@ -3,10 +3,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { TransportType } from 'src/transportProvider/enum/transportEnum';
 import { TransportProvider } from 'src/transportProvider/transportProvider.entity';
+import { Trip } from 'src/trip/trip.entity';
 
 @Entity()
 export class Vehicle {
@@ -36,4 +38,7 @@ export class Vehicle {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @OneToMany(() => Trip, (trip) => trip.vehicle)
+  trips: Trip[];
 }
