@@ -13,6 +13,7 @@ import { TransportProvider } from './transportProvider/transportProvider.entity'
 import { Vehicle } from './vehicle/vehicle.entity';
 import { Location } from './location/location.entity';
 import { LocationModule } from './location/location.module';
+import { LocationDetailModule } from './locationDetail/locationDetail.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { LocationModule } from './location/location.module';
     VehicleModule,
     TripModule,
     LocationModule,
+    LocationDetailModule,
     S3Module,
   ],
   controllers: [],

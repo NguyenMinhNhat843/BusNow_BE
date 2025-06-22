@@ -1,3 +1,4 @@
+import { Location } from 'src/location/location.entity';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import {
   Column,
@@ -24,8 +25,16 @@ export class Trip {
 
   @Column()
   arriveTime: Date;
-  from: string;
-  to: string;
+
+  @ManyToOne(() => Location, (l) => l.tripsFrom)
+  @JoinColumn({
+    name: 'fromLocationId',
+  })
+  from: Location;
+
+  @ManyToOne(() => Location, (l) => l.tripsTo)
+  @JoinColumn({ name: 'toLocationId' })
+  to: Location;
 
   @Column()
   availabelSeat: number;
