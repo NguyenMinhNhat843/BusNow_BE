@@ -66,10 +66,23 @@ export class UserController {
     @Req() req: any,
     @UploadedFile() avatar: Express.Multer.File,
   ) {
+    // Kiểm tra user tồn tại
     const email = req.user.email as string;
     const user = await this.userService.findUserByEmail(email);
     if (!user) {
       throw new BadRequestException('Người dùng không tồn tại');
+    }
+
+    // Kiểm tra phone này đưuọc sử dụng chưa
+    if (body.phoneNumber && body.phoneNumber !== user.phoneNumber) {
+      const isPhoneUsed = await this.userService.findUserByPhoneNumber(
+        body.phoneNumber,
+      );
+      if (isPhoneUsed) {
+        throw new BadRequestException(
+          'Số điện thoại này đã được sử dụng bởi người dùng khác',
+        );
+      }
     }
 
     // Nếu có avatar, xử lý lưu trữ hoặc cập nhật avatar

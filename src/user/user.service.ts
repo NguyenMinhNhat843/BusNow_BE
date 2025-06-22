@@ -32,6 +32,11 @@ export class UserService {
     return user;
   }
 
+  async findUserByPhoneNumber(phone: string) {
+    const user = await this.userRepo.findOneBy({ phoneNumber: phone });
+    return user;
+  }
+
   async getUserLimit(start: number, end: number) {
     const total = await this.userRepo.count();
     if (end < start) {

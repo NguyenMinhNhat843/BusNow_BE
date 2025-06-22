@@ -4,6 +4,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { S3Module } from './s3/s3.module';
+import { TransportProviderModule } from './transportProvider/transport.module';
+import { VehicleModule } from './vehicle/vehicle.module';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import { S3Module } from './s3/s3.module';
     }),
     UserModule,
     AuthModule,
+    TransportProviderModule,
+    VehicleModule,
     S3Module,
   ],
   controllers: [],

@@ -89,7 +89,7 @@ export class AuthService {
 
     const payload = { id: user.id, email: user.email };
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
-    const resetLink = `http://localhost:3000/auth/reset-password?token=${token}`;
+    const resetLink = `http://localhost:4000/dat-lai-mat-khau?token=${token}`;
 
     await this.transporter.sendMail({
       from: process.env.GMAIL_ADMIN_USERNAME,
