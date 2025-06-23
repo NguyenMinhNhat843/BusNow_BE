@@ -1,10 +1,14 @@
 import { Location } from 'src/location/location.entity';
+import { Seat } from 'src/seat/seat.entity';
+import { Ticket } from 'src/ticket/ticket.entity';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -12,10 +16,6 @@ import {
 export class Trip {
   @PrimaryGeneratedColumn('uuid')
   tripId: string;
-
-  @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'vehicleId' })
-  vehicle: Vehicle;
 
   @Column()
   price: number;
@@ -25,6 +25,9 @@ export class Trip {
 
   @Column()
   arriveTime: Date;
+
+  @Column()
+  availabelSeat: number;
 
   @ManyToOne(() => Location, (l) => l.tripsFrom)
   @JoinColumn({
@@ -36,6 +39,13 @@ export class Trip {
   @JoinColumn({ name: 'toLocationId' })
   to: Location;
 
-  @Column()
-  availabelSeat: number;
+  @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'vehicleId' })
+  vehicle: Vehicle;
+
+  @OneToMany(() => Seat, (seat) => seat.trip)
+  seats: Seat[];
+
+  @OneToOne(() => Ticket, (ticket) => ticket.trip)
+  ticket: Ticket;
 }

@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Payment } from 'src/payment/payment.entity';
+import { Ticket } from 'src/ticket/ticket.entity';
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -37,4 +39,10 @@ export class User {
 
   @Column({ default: 'user' })
   role: string;
+
+  @OneToOne(() => Ticket, (ticket) => ticket.user)
+  ticket: Ticket;
+
+  @OneToOne(() => Payment, (payment) => payment.user)
+  payment: Payment;
 }
