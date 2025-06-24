@@ -5,17 +5,11 @@ import { TripController } from './trip.controller';
 import { TripService } from './trip.service';
 import { LocationModule } from 'src/location/location.module';
 import { VehicleModule } from 'src/vehicle/vehicle.module';
-import { SeatModule } from 'src/seat/seat.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Trip]),
-    LocationModule,
-    VehicleModule,
-    SeatModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Trip]), LocationModule, VehicleModule],
   controllers: [TripController],
   providers: [TripService],
-  exports: [TripService],
+  exports: [TripService, TypeOrmModule],
 })
 export class TripModule {}

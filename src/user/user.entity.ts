@@ -5,7 +5,7 @@ import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  userId: string;
 
   @Column({ nullable: true })
   avatar: string;
@@ -39,9 +39,6 @@ export class User {
 
   @Column({ default: 'user' })
   role: string;
-
-  @OneToOne(() => Ticket, (ticket) => ticket.user)
-  ticket: Ticket;
 
   @OneToOne(() => Payment, (payment) => payment.user)
   payment: Payment;

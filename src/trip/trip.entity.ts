@@ -29,23 +29,17 @@ export class Trip {
   @Column()
   availabelSeat: number;
 
-  @ManyToOne(() => Location, (l) => l.tripsFrom)
+  @ManyToOne(() => Location)
   @JoinColumn({
     name: 'fromLocationId',
   })
   from: Location;
 
-  @ManyToOne(() => Location, (l) => l.tripsTo)
+  @ManyToOne(() => Location)
   @JoinColumn({ name: 'toLocationId' })
   to: Location;
 
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicleId' })
   vehicle: Vehicle;
-
-  @OneToMany(() => Seat, (seat) => seat.trip)
-  seats: Seat[];
-
-  @OneToOne(() => Ticket, (ticket) => ticket.trip)
-  ticket: Ticket;
 }

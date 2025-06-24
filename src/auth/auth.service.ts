@@ -67,7 +67,7 @@ export class AuthService {
     }
 
     const payload = {
-      id: existsUser.id,
+      id: existsUser.userId,
       email: existsUser.email,
       role: existsUser.role,
     };
@@ -87,7 +87,7 @@ export class AuthService {
       throw new BadRequestException('Email chưa được đăng ký!');
     }
 
-    const payload = { id: user.id, email: user.email };
+    const payload = { id: user.userId, email: user.email };
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
     const resetLink = `http://localhost:4000/dat-lai-mat-khau?token=${token}`;
 
@@ -103,7 +103,7 @@ export class AuthService {
   async resetPassword(token: string, newPassword: string) {
     try {
       const payload = this.jwtService.verify(token);
-      const user = await this.userRepo.findOneBy({ id: payload.id });
+      const user = await this.userRepo.findOneBy({ userId: payload.id });
       if (!user) throw new BadRequestException('Không tìm thấy người dùng');
 
       user.password = await bcrypt.hash(newPassword, 10);

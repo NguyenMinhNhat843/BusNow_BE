@@ -20,10 +20,4 @@ export class LocationDetail {
   @ManyToOne(() => Location, (l) => l.locationDetails)
   @JoinColumn({ name: 'locationId' })
   location: Location;
-
-  @OneToMany(() => Ticket, (ticket) => ticket.departLocation)
-  departLocationTickets: Ticket[];
-
-  @OneToMany(() => Ticket, (ticket) => ticket.arrivalLocation)
-  arrivalLocationTickets: Ticket[];
 }

@@ -10,13 +10,13 @@ export class Location {
   @Column()
   name: string;
 
-  // Mối quan hệ với Trip, nơi Location là điểm đón
-  @OneToMany(() => Trip, (trip) => trip.from)
-  tripsFrom: Trip[];
+  // // Mối quan hệ với Trip, nơi Location là điểm đón
+  // @OneToMany(() => Trip, (trip) => trip.from)
+  // tripsFrom: Trip[];
 
-  // Mối quan hệ với Trip, nơi Location là điểm đến
-  @OneToMany(() => Trip, (trip) => trip.to)
-  tripsTo: Trip[];
+  // // Mối quan hệ với Trip, nơi Location là điểm đến
+  // @OneToMany(() => Trip, (trip) => trip.to)
+  // tripsTo: Trip[];
 
   @OneToMany(
     () => LocationDetail,

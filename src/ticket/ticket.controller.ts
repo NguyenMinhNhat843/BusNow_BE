@@ -1,0 +1,19 @@
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { CreateTIcketDTO } from './dto/createTicketDTO';
+import { TicketService } from './ticket.service';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { User } from 'src/user/user.entity';
+
+@Controller('ticket')
+export class ticketController {
+  constructor(private readonly ticketService: TicketService) {}
+
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
+    const user = (req as any).user as User;
+    const result = await this.ticketService.createTicket(body, user);
+
+    return result;
+  }
+}

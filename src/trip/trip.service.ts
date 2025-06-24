@@ -18,10 +18,16 @@ export class TripService {
 
     @InjectRepository(Vehicle)
     private readonly vehicleRepository: Repository<Vehicle>,
-
-    @InjectRepository(Seat)
-    private readonly seatRepository: Repository<Seat>,
   ) {}
+
+  async findTripByID(id: string) {
+    const result = await this.tripRepository.findOne({
+      where: { tripId: id },
+      relations: ['from', 'to', 'vehicle'],
+    });
+
+    return result;
+  }
 
   async createTrip(data: createTripDTO) {
     // Kiểm tra location from và to cón tồn tại không

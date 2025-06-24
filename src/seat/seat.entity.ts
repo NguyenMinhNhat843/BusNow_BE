@@ -32,10 +32,7 @@ export class Seat {
   })
   typeSeat: string | null;
 
-  @ManyToOne(() => Trip, (trip) => trip.seats, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Trip, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
-
-  @OneToOne(() => Ticket, (ticket) => ticket.seat)
-  ticket: Ticket;
 }

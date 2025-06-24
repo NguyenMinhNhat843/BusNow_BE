@@ -28,26 +28,23 @@ export class Ticket {
   })
   status: string;
 
-  @ManyToOne(() => LocationDetail, (ld) => ld.departLocationTickets)
+  @ManyToOne(() => LocationDetail)
   @JoinColumn({ name: 'departLocationId' })
   departLocation: LocationDetail;
 
-  @ManyToOne(() => LocationDetail, (ld) => ld.arrivalLocationTickets)
+  @ManyToOne(() => LocationDetail)
   @JoinColumn({ name: 'arrivalLocationId' })
   arrivalLocation: LocationDetail;
 
-  @OneToOne(() => User, (u) => u.ticket)
+  @OneToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @OneToOne(() => Trip, (trip) => trip.ticket)
+  @OneToOne(() => Trip)
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
 
-  @OneToOne(() => Seat, (seat) => seat.ticket)
+  @OneToOne(() => Seat)
   @JoinColumn({ name: 'seatId' })
   seat: Seat;
-
-  @OneToOne(() => Payment, (payment) => payment.ticket)
-  payment: Payment;
 }

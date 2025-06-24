@@ -34,11 +34,11 @@ export class Payment {
   })
   status: string;
 
-  @OneToOne(() => Ticket, (ticket) => ticket.payment)
+  @OneToOne(() => Ticket)
   @JoinColumn({ name: 'ticketId' })
   ticket: Ticket;
 
-  @OneToOne(() => User, (user) => user.ticket)
+  @OneToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 }
