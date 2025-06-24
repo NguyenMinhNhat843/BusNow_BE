@@ -9,5 +9,6 @@ import { Trip } from 'src/trip/trip.entity';
   imports: [TypeOrmModule.forFeature([Vehicle])],
   controllers: [VehicleController],
   providers: [VehicleService],
+  exports: [VehicleService, TypeOrmModule],
 })
 export class VehicleModule {}

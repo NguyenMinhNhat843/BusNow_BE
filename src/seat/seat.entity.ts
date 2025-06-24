@@ -19,7 +19,7 @@ export class Seat {
   @Column()
   seatCode: string; // Mã ghế, ví dụ: "A1", "B2", v.v.
 
-  @Column()
+  @Column({ default: false })
   isBooked: boolean;
 
   // tickket: Ticket
@@ -30,7 +30,7 @@ export class Seat {
     enum: SeatType,
     nullable: true,
   })
-  typeSeat: string;
+  typeSeat: string | null;
 
   @ManyToOne(() => Trip, (trip) => trip.seats, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tripId' })

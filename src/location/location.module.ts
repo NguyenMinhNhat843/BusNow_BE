@@ -4,5 +4,6 @@ import { Location } from './location.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Location])],
+  exports: [TypeOrmModule],
 })
 export class LocationModule {}
