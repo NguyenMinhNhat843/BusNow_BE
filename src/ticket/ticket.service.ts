@@ -12,6 +12,8 @@ import { LocationDetailService } from 'src/locationDetail/locationDetailService'
 import { TripService } from 'src/trip/trip.service';
 import { SeatService } from 'src/seat/seat.service';
 import { Payment } from 'src/payment/payment.entity';
+import { PaymentMethod } from 'src/common/enum/PaymentMethod';
+import { TicketStatus } from 'src/common/enum/TicketStatus';
 
 @Injectable()
 export class TicketService {
@@ -120,5 +122,28 @@ export class TicketService {
     } finally {
       await querryRunner.release();
     }
+  }
+
+  async cancleTicket(ticketId: string, userId: string) {
+    const ticket = await this.ticketRepository.findOne({
+      where: {
+        ticketId,
+        user: {
+          userId,
+        },
+      },
+    });
+    if (!ticket) {
+      throw new BadRequestException(
+        'Vé không tồn tại hoặc không thuộc về người dùng này',
+      );
+    }
+    ticket.status = TicketStatus.CANCELLED;
+    await this.ticketRepository.save(ticket);
+    return {
+      status: 'success',
+      message: 'Vé đã được hủy thành công',
+      ticket,
+    };
   }
 }
