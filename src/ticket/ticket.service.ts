@@ -41,6 +41,14 @@ export class TicketService {
         methodPayment,
       } = ticketData;
 
+      // validate seatCode đúng theo mẫu A01
+      const regex = /^A\d{2}$/;
+      if (!regex.test(seatCode)) {
+        throw new BadRequestException(
+          'Mã ghế không hợp lệ. Vui lòng sử dụng định dạng Axx (ví dụ: A01, A02, ...)',
+        );
+      }
+
       // Check tồn tại depart locationDetail
       const departLocationDetail =
         await this.locationDetailService.findLocationDetailByIdOrName(
@@ -67,6 +75,16 @@ export class TicketService {
       if (!trip) {
         throw new BadRequestException(
           'Chuyến đi không tồn tại trong hệ thống!!',
+        );
+      }
+      console.log('trip', trip);
+
+      // validate seatCode phải >= 01 và <= totalSeat cảu vehicle
+      const numberSeatCode = parseInt(seatCode.slice(1), 10);
+      const totalSeat = trip.vehicle.totalSeat;
+      if (numberSeatCode < 1 || numberSeatCode > totalSeat) {
+        throw new BadRequestException(
+          `Mã ghế ${seatCode} không hợp lệ. Vui lòng sử dụng mã ghế từ A01 đến A${totalSeat.toString().padStart(2, '0')}`,
         );
       }
 
