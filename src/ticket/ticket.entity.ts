@@ -36,15 +36,18 @@ export class Ticket {
   @JoinColumn({ name: 'arrivalLocationId' })
   arrivalLocation: LocationDetail;
 
-  @OneToOne(() => User)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @OneToOne(() => Trip)
+  @ManyToOne(() => Trip)
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
 
   @OneToOne(() => Seat)
   @JoinColumn({ name: 'seatId' })
   seat: Seat;
+
+  @Column({ nullable: true })
+  seatCode: string;
 }

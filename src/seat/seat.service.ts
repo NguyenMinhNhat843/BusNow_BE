@@ -32,6 +32,21 @@ export class SeatService {
     return seat;
   }
 
+  // kiểm tra ghế này đã đặt trong trip này chưa
+  async checkSeatExistsOnTrip(seatCode: string, tripId: string) {
+    const seat = await this.seatRepository.findOne({
+      where: {
+        seatCode,
+        trip: { tripId },
+      },
+    });
+
+    if (seat) {
+      return true; // Ghế đã tồn tại trong chuyến đi
+    }
+    return false;
+  }
+
   async createSeat(data: CreateSeatDTO) {
     const { seatCode, tripId } = data;
 

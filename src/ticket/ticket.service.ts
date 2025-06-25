@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTIcketDTO } from './dto/createTicketDTO';
@@ -17,68 +17,90 @@ export class TicketService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
-
     private locationDetailService: LocationDetailService,
-
     private readonly tripService: TripService,
     private readonly seatService: SeatService,
-
-    @InjectRepository(Vehicle)
-    private readonly vehicleRepository: Repository<Vehicle>,
+    private dataSource: DataSource,
   ) {}
 
   async createTicket(ticketData: CreateTIcketDTO, user: User) {
-    const { departLocationId, arriveLocationId, tripId, seatCode, typeSeat } =
-      ticketData;
+    const querryRunner = this.dataSource.createQueryRunner();
+    await querryRunner.connect();
+    await querryRunner.startTransaction();
 
-    // Check tồn tại depart locationDetail
-    const departLocation =
-      await this.locationDetailService.findLocationDetailByIdOrName(
-        departLocationId,
-      );
-    if (!departLocation)
-      throw new BadRequestException(
-        'Địa điểm khởi hành không tồn tại trong hệ thống!!',
-      );
+    try {
+      const { departLocationId, arriveLocationId, tripId, seatCode, typeSeat } =
+        ticketData;
 
-    // Check tồn tại arive locationDetail
-    const arriveLocation =
-      await this.locationDetailService.findLocationDetailByIdOrName(
-        arriveLocationId,
+      // Check tồn tại depart locationDetail
+      const departLocation =
+        await this.locationDetailService.findLocationDetailByIdOrName(
+          departLocationId,
+        );
+      if (!departLocation)
+        throw new BadRequestException(
+          'Địa điểm khởi hành không tồn tại trong hệ thống!!',
+        );
+
+      // Check tồn tại arive locationDetail
+      const arriveLocation =
+        await this.locationDetailService.findLocationDetailByIdOrName(
+          arriveLocationId,
+        );
+      if (!arriveLocation) {
+        throw new BadRequestException(
+          'Địa điểm đến không tồn tại trong hệ thống!!',
+        );
+      }
+
+      // Check tồn tại trip
+      const trip = await this.tripService.findTripByID(tripId);
+      if (!trip) {
+        throw new BadRequestException(
+          'Chuyến đi không tồn tại trong hệ thống!!',
+        );
+      }
+
+      // Check trùng ghế trong trip
+      const existsSeatOnTrip = await this.seatService.checkSeatExistsOnTrip(
+        seatCode,
+        tripId,
       );
-    if (!arriveLocation) {
-      throw new BadRequestException(
-        'Địa điểm đến không tồn tại trong hệ thống!!',
-      );
+      if (existsSeatOnTrip) {
+        throw new BadRequestException(
+          `Ghế ${seatCode} đã được đặt trong chuyến đi ${tripId}!!`,
+        );
+      }
+
+      // Tạo seat
+      const newSeat = querryRunner.manager.create(Seat, {
+        seatCode,
+        trip,
+        typeSeat: trip.vehicle.type === 'BUS' ? null : typeSeat,
+        isBooked: true,
+      });
+      await querryRunner.manager.save(newSeat);
+
+      // Tạo ticket
+      const newTicket = querryRunner.manager.create(Ticket, {
+        ticketTime: new Date(),
+        departLocation,
+        arrivalLocation: arriveLocation,
+        trip,
+        seat: newSeat,
+        seatCode,
+        status: 'UNPAID',
+        user,
+      });
+      await querryRunner.manager.save(newTicket);
+
+      await querryRunner.commitTransaction();
+      return newTicket;
+    } catch (error) {
+      await querryRunner.rollbackTransaction();
+      throw new BadRequestException(error.message || 'Lỗi khi tạo vé');
+    } finally {
+      await querryRunner.release();
     }
-
-    // Check tồn tại trip
-    const trip = await this.tripService.findTripByID(tripId);
-    if (!trip) {
-      throw new BadRequestException('Chuyến đi không tồn tại trong hệ thống!!');
-    }
-
-    // Tạo seat nếu chưa có
-    const newSeat = await this.seatService.createSeat({
-      seatCode,
-      tripId: trip.tripId,
-      typeSeat: typeSeat,
-    });
-
-    // Tạo ticket
-    console.log('User: ', user);
-    const newTicket = this.ticketRepository.create({
-      ticketTime: new Date(),
-      departLocation,
-      arrivalLocation: arriveLocation,
-      trip,
-      seat: newSeat,
-      status: 'UNPAID', // Mặc định trạng thái là UNPAID
-      user,
-    });
-    console.log('New Ticket Created: ', newTicket);
-    await this.ticketRepository.save(newTicket);
-
-    return newTicket;
   }
 }
