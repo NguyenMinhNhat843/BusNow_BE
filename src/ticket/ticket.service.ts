@@ -11,6 +11,7 @@ import { Vehicle } from 'src/vehicle/vehicle.entity';
 import { LocationDetailService } from 'src/locationDetail/locationDetailService';
 import { TripService } from 'src/trip/trip.service';
 import { SeatService } from 'src/seat/seat.service';
+import { Payment } from 'src/payment/payment.entity';
 
 @Injectable()
 export class TicketService {
@@ -29,25 +30,31 @@ export class TicketService {
     await querryRunner.startTransaction();
 
     try {
-      const { departLocationId, arriveLocationId, tripId, seatCode, typeSeat } =
-        ticketData;
+      const {
+        departLocationDetailId,
+        arriveLocationDetailId,
+        tripId,
+        seatCode,
+        typeSeat,
+        methodPayment,
+      } = ticketData;
 
       // Check tồn tại depart locationDetail
-      const departLocation =
+      const departLocationDetail =
         await this.locationDetailService.findLocationDetailByIdOrName(
-          departLocationId,
+          departLocationDetailId,
         );
-      if (!departLocation)
+      if (!departLocationDetail)
         throw new BadRequestException(
           'Địa điểm khởi hành không tồn tại trong hệ thống!!',
         );
 
       // Check tồn tại arive locationDetail
-      const arriveLocation =
+      const arriveLocatioDetailn =
         await this.locationDetailService.findLocationDetailByIdOrName(
-          arriveLocationId,
+          arriveLocationDetailId,
         );
-      if (!arriveLocation) {
+      if (!arriveLocatioDetailn) {
         throw new BadRequestException(
           'Địa điểm đến không tồn tại trong hệ thống!!',
         );
@@ -72,6 +79,16 @@ export class TicketService {
         );
       }
 
+      // tạo payment
+      const payment = querryRunner.manager.create(Payment, {
+        amount: trip.price,
+        paymentTime: new Date(),
+        method: methodPayment,
+        status: 'PENDING',
+        user,
+      });
+      await querryRunner.manager.save(payment);
+
       // Tạo seat
       const newSeat = querryRunner.manager.create(Seat, {
         seatCode,
@@ -84,13 +101,14 @@ export class TicketService {
       // Tạo ticket
       const newTicket = querryRunner.manager.create(Ticket, {
         ticketTime: new Date(),
-        departLocation,
-        arrivalLocation: arriveLocation,
+        departLocationDetail,
+        arrivalLocation: arriveLocatioDetailn,
         trip,
         seat: newSeat,
         seatCode,
         status: 'UNPAID',
         user,
+        payment,
       });
       await querryRunner.manager.save(newTicket);
 

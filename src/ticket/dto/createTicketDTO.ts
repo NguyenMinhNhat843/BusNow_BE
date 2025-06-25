@@ -1,11 +1,12 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { PaymentMethod } from 'src/common/enum/PaymentMethod';
 
 export class CreateTIcketDTO {
   @IsString()
-  departLocationId: string;
+  departLocationDetailId: string;
 
   @IsString()
-  arriveLocationId: string;
+  arriveLocationDetailId: string;
 
   @IsString()
   tripId: string;
@@ -16,4 +17,7 @@ export class CreateTIcketDTO {
   @IsString()
   @IsOptional()
   typeSeat?: string;
+
+  @IsEnum(PaymentMethod, { message: 'Phương thức thanh toán không hợp lệ!' })
+  methodPayment: string;
 }

@@ -48,6 +48,9 @@ export class Ticket {
   @JoinColumn({ name: 'seatId' })
   seat: Seat;
 
+  @OneToOne(() => Payment, (p) => p.ticket)
+  payment: Payment;
+
   @Column({ nullable: true })
   seatCode: string;
 }

@@ -6,6 +6,7 @@ import {
   Column,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToOne,
   PrimaryColumn,
   PrimaryGeneratedColumn,
@@ -34,11 +35,11 @@ export class Payment {
   })
   status: string;
 
-  @OneToOne(() => Ticket)
+  @OneToOne(() => Ticket, (t) => t.payment)
   @JoinColumn({ name: 'ticketId' })
   ticket: Ticket;
 
-  @OneToOne(() => User)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
 }
