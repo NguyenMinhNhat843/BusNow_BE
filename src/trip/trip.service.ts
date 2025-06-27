@@ -140,6 +140,38 @@ export class TripService {
       );
     }
 
+    // Kiểm tra địa điểm hiện tại của xe có đúng là điểm khởi hành không
+    // Kiểm tra thời gian khởi hành phải >= ariveTime của chuyến đi trước đó
+    const lastTrip = await this.tripRepository.findOne({
+      where: {
+        vehicle: { code: data.vehicleCodeNumber },
+      },
+      order: { departTime: 'DESC' },
+    });
+    if (lastTrip) {
+      if (
+        data.fromLocationName.trim().toLowerCase() !==
+        lastTrip.toLocationName.trim().toLowerCase()
+      ) {
+        throw new BadRequestException(
+          `Phương tiện ${vehicle.code} hiện đang ở ${lastTrip.toLocationName}, không thể tạo chuyến đi từ ${data.fromLocationName}!!`,
+        );
+      }
+
+      // Cho tài xế nghỉ 8 tiếng trước khi bắt đầu chuyến mới
+      const arriveTime = new Date(lastTrip.arriveTime);
+      const minNextDepartTime = new Date(
+        arriveTime.getTime() + 8 * 60 * 60 * 1000,
+      ); // 8 tiếng sau
+      const dtoDepartTime = new Date(data.departTime);
+
+      if (dtoDepartTime < minNextDepartTime) {
+        throw new BadRequestException(
+          `Tài xế phải nghỉ ít nhất 8 giờ. Chuyến tiếp theo phải bắt đầu sau ${minNextDepartTime.toLocaleString()}.`,
+        );
+      }
+    }
+
     // tạo trip
     const tripData = {
       price: data.price,
@@ -153,7 +185,6 @@ export class TripService {
       to,
       vehicle,
     };
-    console.log('tripData', tripData);
     const trip = this.tripRepository.create(tripData);
     await this.tripRepository.save(trip);
 
