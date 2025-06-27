@@ -33,7 +33,8 @@ export class LocationDetailService {
   async createLocationDetail(locationDetailData: CreateLocationDetailDTO) {
     const { name, locationId } = locationDetailData;
 
-    const location = await this.locationService.findLocationByName(locationId);
+    const location =
+      await this.locationService.findLocationByNameOrId(locationId);
     if (!location) {
       throw new BadRequestException('location không tồn tại!!!');
     }

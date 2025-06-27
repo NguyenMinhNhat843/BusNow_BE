@@ -14,6 +14,7 @@ import { SeatService } from 'src/seat/seat.service';
 import { Payment } from 'src/payment/payment.entity';
 import { PaymentMethod } from 'src/common/enum/PaymentMethod';
 import { TicketStatus } from 'src/common/enum/TicketStatus';
+import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 
 @Injectable()
 export class TicketService {
@@ -77,7 +78,6 @@ export class TicketService {
           'Chuyến đi không tồn tại trong hệ thống!!',
         );
       }
-      console.log('trip', trip);
 
       // validate seatCode phải >= 01 và <= totalSeat cảu vehicle
       const numberSeatCode = parseInt(seatCode.slice(1), 10);
@@ -104,7 +104,9 @@ export class TicketService {
         amount: trip.price,
         paymentTime: new Date(),
         method: methodPayment,
-        status: 'PENDING',
+        status: ticketData.statusPayment
+          ? ticketData.statusPayment
+          : PaymentStatus.PENDING,
         user,
       });
       await querryRunner.manager.save(payment);
@@ -121,7 +123,7 @@ export class TicketService {
       // Tạo ticket
       const newTicket = querryRunner.manager.create(Ticket, {
         ticketTime: new Date(),
-        departLocationDetail,
+        departLocation: departLocationDetail,
         arrivalLocation: arriveLocatioDetailn,
         trip,
         seat: newSeat,

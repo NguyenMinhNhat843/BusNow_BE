@@ -35,9 +35,15 @@ export class Trip {
   })
   from: Location;
 
+  @Column({ nullable: true })
+  fromLocationName: string;
+
   @ManyToOne(() => Location)
   @JoinColumn({ name: 'toLocationId' })
   to: Location;
+
+  @Column({ nullable: true })
+  toLocationName: string;
 
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicleId' })
