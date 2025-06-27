@@ -60,7 +60,7 @@ export class SeatService {
     }
 
     // Lấy vehicle của trip xem nó là BUS hay TRAIN/PLANE
-    const vehicle = await this.vehicleService.findVehicleById(
+    const vehicle = await this.vehicleService.findVehicleByIdOrCodeNumber(
       trip.vehicle.vehicleId,
     );
     if (!vehicle) {

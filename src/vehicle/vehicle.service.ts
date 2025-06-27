@@ -11,14 +11,9 @@ export class VehicleService {
     private readonly vehicleRepository: Repository<Vehicle>,
   ) {}
 
-  findVehicleById(id: string) {
-    const isId = isUUID(id);
-    if (!isId) {
-      throw new BadRequestException('Id không hợp lệ');
-    }
-
+  findVehicleByIdOrCodeNumber(keyword: string) {
     const vehicle = this.vehicleRepository.findOne({
-      where: { vehicleId: id },
+      where: isUUID(keyword) ? { vehicleId: keyword } : { code: keyword },
     });
     return vehicle;
   }

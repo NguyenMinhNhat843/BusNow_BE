@@ -29,21 +29,24 @@ export class Trip {
   @Column()
   availabelSeat: number;
 
+  @Column({ nullable: true })
+  fromLocationName: string;
+
+  @Column({ nullable: true })
+  toLocationName: string;
+
+  @Column({ nullable: true })
+  codeNumber: string; // biển số xe
+
   @ManyToOne(() => Location)
   @JoinColumn({
     name: 'fromLocationId',
   })
   from: Location;
 
-  @Column({ nullable: true })
-  fromLocationName: string;
-
   @ManyToOne(() => Location)
   @JoinColumn({ name: 'toLocationId' })
   to: Location;
-
-  @Column({ nullable: true })
-  toLocationName: string;
 
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicleId' })

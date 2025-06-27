@@ -12,6 +12,7 @@ import { Vehicle } from 'src/vehicle/vehicle.entity';
 import { Seat } from 'src/seat/seat.entity';
 import { SearchTripDTO } from './dto/searchTripDTO';
 import { LocationService } from 'src/location/locationService';
+import { VehicleService } from 'src/vehicle/vehicle.service';
 
 @Injectable()
 export class TripService {
@@ -19,9 +20,7 @@ export class TripService {
     @InjectRepository(Trip)
     private readonly tripRepository: Repository<Trip>,
     private locationService: LocationService,
-
-    @InjectRepository(Vehicle)
-    private readonly vehicleRepository: Repository<Vehicle>,
+    private vehicleService: VehicleService,
   ) {}
 
   async findTripByID(id: string) {
@@ -97,23 +96,23 @@ export class TripService {
   async createTrip(data: createTripDTO) {
     // Kiểm tra location from có tồn tại ko
     const from = await this.locationService.findLocationByNameOrId(
-      data.fromLocationId,
+      data.fromLocationName,
     );
     if (!from) {
-      throw new BadRequestException('Địa điểm không tồn tại trong hệ thống!!');
+      throw new BadRequestException('Điểm đón không tồn tại trong hệ thống!!');
     }
 
     // Kiểm tra location to có tồn tại ko
     const to = await this.locationService.findLocationByNameOrId(
-      data.toLocationId,
+      data.toLocationName,
     );
     if (!to)
-      throw new BadRequestException('Địa điểm không tồn tại trong hệ thống!!');
+      throw new BadRequestException('Điểm đến không tồn tại trong hệ thống!!');
 
     // Kiểm tra vehicle của trip này có tồn tại không
-    const vehicle = await this.vehicleRepository.findOneBy({
-      vehicleId: data.vehicleId,
-    });
+    const vehicle = await this.vehicleService.findVehicleByIdOrCodeNumber(
+      data.vehicleCodeNumber,
+    );
     if (!vehicle) {
       throw new BadRequestException(
         'Phương tiện không tồn tại trong hệ thống!!',
@@ -130,12 +129,11 @@ export class TripService {
     // Kiểm tra trip này có tồn tại chưa
     const existsTrip = await this.tripRepository.findOne({
       where: {
-        vehicle: { vehicleId: data.vehicleId },
+        vehicle: { code: data.vehicleCodeNumber },
         departTime: Equal(data.departTime),
       },
       relations: ['vehicle'],
     });
-    console.log('Tríp: ', existsTrip);
     if (existsTrip) {
       throw new BadRequestException(
         `Xe ${existsTrip.vehicle.code} đã có chuyến đi vào lúc ${new Date(data.departTime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} rồi!!`,
@@ -148,12 +146,14 @@ export class TripService {
       departTime: data.departTime,
       arriveTime: data.arriveTime,
       availabelSeat: vehicle.totalSeat, // Số ghế có sẵn bằng tổng số ghế của phương tiện
-      from,
       fromLocationName: from.name, // Lưu tên địa điểm
-      to,
       toLocationName: to.name, // Lưu tên địa điểm
+      codeNumber: data.vehicleCodeNumber,
+      from,
+      to,
       vehicle,
     };
+    console.log('tripData', tripData);
     const trip = this.tripRepository.create(tripData);
     await this.tripRepository.save(trip);
 
