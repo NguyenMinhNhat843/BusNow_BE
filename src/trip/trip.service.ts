@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Between, Equal, MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, Equal, ILike, MoreThanOrEqual, Repository } from 'typeorm';
 import { Trip } from './trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createTripDTO } from './dto/createTripDTO';
@@ -73,8 +73,8 @@ export class TripService {
     // Tìm kiếm trip theo from/to/time
     const trips = await this.tripRepository.find({
       where: {
-        fromLocationName,
-        toLocationName,
+        fromLocationName: ILike(fromLocationName),
+        toLocationName: ILike(toLocationName),
         departTime: Between(startTimeDate, endTimeDate),
       },
     });
@@ -127,6 +127,22 @@ export class TripService {
       );
     }
 
+    // Kiểm tra trip này có tồn tại chưa
+    const existsTrip = await this.tripRepository.findOne({
+      where: {
+        vehicle: { vehicleId: data.vehicleId },
+        departTime: Equal(data.departTime),
+      },
+      relations: ['vehicle'],
+    });
+    console.log('Tríp: ', existsTrip);
+    if (existsTrip) {
+      throw new BadRequestException(
+        `Xe ${existsTrip.vehicle.code} đã có chuyến đi vào lúc ${new Date(data.departTime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })} rồi!!`,
+      );
+    }
+
+    // tạo trip
     const tripData = {
       price: data.price,
       departTime: data.departTime,

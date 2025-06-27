@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Location } from './location.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { validate as isUUID } from 'uuid';
@@ -21,8 +21,14 @@ export class LocationService {
   }
 
   async findLocationByNameOrId(keyword: string) {
+    // Xử lý chuỗi: bỏ khoảng trắng, chuyển chữ thường
+    keyword = keyword.trim().toLowerCase();
+
+    // Tìm kiếm location theo ID hoặc tên
     const location = await this.locationRepository.findOne({
-      where: isUUID(keyword) ? { locationId: keyword } : { name: keyword },
+      where: isUUID(keyword)
+        ? { locationId: keyword }
+        : { name: ILike(keyword) },
     });
 
     return location;
