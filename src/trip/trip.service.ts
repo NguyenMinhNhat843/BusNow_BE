@@ -11,6 +11,7 @@ import { SearchTripDTO } from './dto/searchTripDTO';
 import { LocationService } from 'src/location/locationService';
 import { VehicleService } from 'src/vehicle/vehicle.service';
 import { DateTime } from 'luxon';
+import { SortByEnum } from 'src/common/enum/SortByEnum';
 
 @Injectable()
 export class TripService {
@@ -32,7 +33,17 @@ export class TripService {
 
   // Lọc trip theo from/to/time
   async searchTrip(data: SearchTripDTO) {
-    const { fromLocationName, toLocationName } = data;
+    const {
+      fromLocationName,
+      toLocationName,
+      page,
+      limit,
+      providerName,
+      vehicleSubType,
+      minPrice,
+      maxPrice,
+      sortBy,
+    } = data;
     // Kiểm tra location from có tồn tại ko
     const from =
       await this.locationService.findLocationByNameOrId(fromLocationName);
@@ -74,27 +85,72 @@ export class TripService {
     const startTimeUTC = startTimeVN.toUTC().toJSDate();
     const endTimeUTC = endTimeVN.toUTC().toJSDate();
 
-    const trips = await this.tripRepository.find({
-      where: {
-        fromLocationName: ILike(fromLocationName),
-        toLocationName: ILike(toLocationName),
-        departTime: Between(startTimeUTC, endTimeUTC),
-      },
-      relations: ['vehicle', 'vehicle.transportProvider'],
-    });
+    // query trips
+    const query = this.tripRepository
+      .createQueryBuilder('trip')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.transportProvider', 'provider')
+      .where('trip.fromLocationName ILIKE :from', { from: fromLocationName })
+      .andWhere('trip.toLocationName ILIKE :to', { to: toLocationName })
+      .andWhere('trip.departTime BETWEEN :start AND :end', {
+        start: startTimeUTC,
+        end: endTimeUTC,
+      });
 
-    if (trips.length === 0) {
-      return {
-        status: 'success',
-        message: 'Không tìm thấy chuyến đi nào phù hợp với yêu cầu của bạn!!',
-        trips: [],
-      };
+    // Lọc theo tên nhà xe
+    if (providerName?.length) {
+      query.andWhere('provider.name ILIKE ANY(:providerName)', {
+        providerName: providerName.map((name) => `%${name}%`),
+      });
     }
+
+    // Lọc theo loại xe - VIP/STANDARD/LIMOUSE
+    if (vehicleSubType?.length) {
+      query.andWhere('vehicle.subType IN (:...vehicleSubType)', {
+        vehicleSubType,
+      });
+    }
+
+    // lọc theo giá tiền
+    if (minPrice) {
+      query.andWhere('trip.price >= :minPrice', { minPrice });
+    }
+    if (maxPrice) {
+      query.andWhere('trip.price <= :maxPrice', { maxPrice });
+    }
+
+    // sort
+    switch (sortBy) {
+      case SortByEnum.PRICE_ASC:
+        query.orderBy('trip.price', 'ASC');
+        break;
+      case SortByEnum.PRICE_DESC:
+        query.orderBy('trip.price', 'DESC');
+        break;
+      case SortByEnum.DEPARTTIME_ASC:
+        query.orderBy('trip.departTime', 'ASC');
+        break;
+      case SortByEnum.DEPARTTIME_DESC:
+        query.orderBy('trip.departTime', 'DESC');
+        break;
+    }
+
+    // phân trang
+    const [results, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       status: 'success',
-      message: 'Tìm kiếm chuyến đi thành công!!',
-      trips,
+      message: 'Tìm kiếm chuyến đi thành công!',
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit),
+      },
+      trips: results,
     };
   }
 

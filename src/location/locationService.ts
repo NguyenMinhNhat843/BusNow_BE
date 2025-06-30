@@ -15,6 +15,20 @@ export class LocationService {
     return this.locationRepository.find();
   }
 
+  async getLocationDetail(locationKeyword: string) {
+    // Xuwr lý chuỗi: bỏ khoảng trắng, chuyển chữ thường
+    locationKeyword = locationKeyword.trim().toLowerCase();
+
+    // Tìm kiếm location theo ID hoặc tên
+    const location = await this.locationRepository.findOne({
+      where: isUUID(locationKeyword)
+        ? { locationId: locationKeyword }
+        : { name: ILike(locationKeyword) },
+      relations: ['locationDetails'],
+    });
+    return location;
+  }
+
   async createLocation(nameLocation: string) {
     const newLocation = this.locationRepository.create({
       name: nameLocation,

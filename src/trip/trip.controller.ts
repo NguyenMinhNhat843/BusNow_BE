@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { createTripDTO } from './dto/createTripDTO';
 import { SearchTripDTO } from './dto/searchTripDTO';
+import { DateTime } from 'luxon';
 
 @Controller('trip')
 export class TripController {
@@ -16,11 +17,18 @@ export class TripController {
   async searchTrip(@Query() query: SearchTripDTO) {
     const response = await this.tripService.searchTrip(query);
     const formattedTrips = response.trips.map((trip) => {
+      const departTimeVN = DateTime.fromISO(trip.departTime.toISOString())
+        .setZone('Asia/Ho_Chi_Minh')
+        .toFormat('HH:mm dd/MM/yyyy');
+      const arriveTimeVN = DateTime.fromISO(trip.arriveTime.toISOString())
+        .setZone('Asia/Ho_Chi_Minh')
+        .toFormat('HH:mm dd/MM/yyyy');
+
       return {
         tripId: trip.tripId,
         price: trip.price,
-        departTime: trip.departTime,
-        arriveTime: trip.arriveTime,
+        departTime: departTimeVN,
+        arriveTime: arriveTimeVN,
         availableSeat: trip.availabelSeat,
         totalSeat: trip.vehicle?.totalSeat,
         fromLocationName: trip.fromLocationName,
@@ -32,8 +40,9 @@ export class TripController {
         avatarProvider: trip.vehicle?.transportProvider?.logo,
       };
     });
+
     return {
-      status: 'success',
+      ...response,
       trips: formattedTrips,
     };
   }
