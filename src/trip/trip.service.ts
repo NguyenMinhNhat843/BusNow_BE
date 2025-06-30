@@ -7,12 +7,10 @@ import { Between, Equal, ILike, MoreThanOrEqual, Repository } from 'typeorm';
 import { Trip } from './trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createTripDTO } from './dto/createTripDTO';
-import { Location } from 'src/location/location.entity';
-import { Vehicle } from 'src/vehicle/vehicle.entity';
-import { Seat } from 'src/seat/seat.entity';
 import { SearchTripDTO } from './dto/searchTripDTO';
 import { LocationService } from 'src/location/locationService';
 import { VehicleService } from 'src/vehicle/vehicle.service';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class TripService {
@@ -53,29 +51,36 @@ export class TripService {
       );
     }
 
-    // Kiểm tra có startTime không
-    const startTime = data.startTime ? data.startTime : new Date();
+    // Kiểm tra có departTime không
+    const departTime = data.departTime ? data.departTime : new Date();
 
-    // kiểm tra startTime > now
-    if (new Date(startTime) < new Date()) {
+    // kiểm tra departTime > now
+    if (new Date(departTime) < new Date()) {
       throw new BadRequestException(
         'Thời gian khởi hành phải lớn hơn thời gian hiện tại!!',
       );
     }
 
-    // Xử lý thời gian khởi hành
-    const startTimeDate = new Date(startTime);
-    const endTimeDate = new Date(startTime);
-    endTimeDate.setDate(endTimeDate.getDate() + 1);
-    // ==> bởi vì startTime là ngày thôi ko có giờ mà trip thì sẽ có hour nên ta sẽ lấy tất cả các chuyến đi trong ngày đó
+    // Múi giờ của hệ thống backend/PostgreSQL
+    const vnZone = 'Asia/Ho_Chi_Minh';
 
-    // Tìm kiếm trip theo from/to/time
+    // Chuyển departTime (string 'yyyy-MM-dd') thành khoảng ngày ở VN
+    const startTimeVN = DateTime.fromISO(departTime, { zone: vnZone }).startOf(
+      'day',
+    );
+    const endTimeVN = startTimeVN.plus({ days: 1 });
+
+    // Convert về UTC để so sánh đúng với dữ liệu trong DB
+    const startTimeUTC = startTimeVN.toUTC().toJSDate();
+    const endTimeUTC = endTimeVN.toUTC().toJSDate();
+
     const trips = await this.tripRepository.find({
       where: {
         fromLocationName: ILike(fromLocationName),
         toLocationName: ILike(toLocationName),
-        departTime: Between(startTimeDate, endTimeDate),
+        departTime: Between(startTimeUTC, endTimeUTC),
       },
+      relations: ['vehicle', 'vehicle.transportProvider'],
     });
 
     if (trips.length === 0) {
@@ -108,6 +113,13 @@ export class TripService {
     );
     if (!to)
       throw new BadRequestException('Điểm đến không tồn tại trong hệ thống!!');
+
+    // Kiểm tra from với to có giống nhau không
+    if (from.name.trim().toLowerCase() === to.name.trim().toLowerCase()) {
+      throw new BadRequestException(
+        'Điểm đón và điểm đến không được giống nhau!!',
+      );
+    }
 
     // Kiểm tra vehicle của trip này có tồn tại không
     const vehicle = await this.vehicleService.findVehicleByIdOrCodeNumber(

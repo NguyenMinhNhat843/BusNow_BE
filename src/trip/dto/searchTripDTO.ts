@@ -12,5 +12,5 @@ export class SearchTripDTO {
     { message: 'Thời gian khởi hành phải là định dạng ngày hợp lệ' },
   )
   @IsOptional()
-  startTime?: Date;
+  departTime?: Date;
 }

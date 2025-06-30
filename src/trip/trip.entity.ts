@@ -20,10 +20,10 @@ export class Trip {
   @Column()
   price: number;
 
-  @Column()
+  @Column({ type: 'timestamptz', nullable: true })
   departTime: Date;
 
-  @Column()
+  @Column({ type: 'timestamptz', nullable: true })
   arriveTime: Date;
 
   @Column()

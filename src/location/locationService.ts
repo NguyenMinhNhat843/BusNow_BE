@@ -11,6 +11,10 @@ export class LocationService {
     private readonly locationRepository: Repository<Location>,
   ) {}
 
+  async getAllLocation() {
+    return this.locationRepository.find();
+  }
+
   async createLocation(nameLocation: string) {
     const newLocation = this.locationRepository.create({
       name: nameLocation,
