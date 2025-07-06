@@ -34,5 +34,5 @@ export class FilterTicketDTO {
 
   @IsOptional()
   @IsEnum(SortTicketEnum)
-  sortBy: string;
+  sortBy?: SortTicketEnum;
 }

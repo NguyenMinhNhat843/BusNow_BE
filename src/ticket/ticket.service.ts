@@ -16,6 +16,7 @@ import { PaymentMethod } from 'src/common/enum/PaymentMethod';
 import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
+import { SortTicketEnum } from 'src/common/enum/sortTicketEnum';
 
 @Injectable()
 export class TicketService {
@@ -218,6 +219,21 @@ export class TicketService {
         'ticket.ticketTime BETWEEN :startTime AND :endTime',
         { startTime, endTime },
       );
+    }
+
+    // Có ticketStatus
+    if (ticketStatus) {
+      queryTicket.andWhere('ticket.status = :status', { status: ticketStatus });
+    }
+
+    // sortBy
+    switch (sortBy) {
+      case SortTicketEnum.TIME_ASC:
+        queryTicket.orderBy('ticket.ticketTime', 'ASC');
+        break;
+      case SortTicketEnum.TIME_DESC:
+        queryTicket.orderBy('ticket.ticketTime', 'DESC');
+        break;
     }
 
     // phân trang
