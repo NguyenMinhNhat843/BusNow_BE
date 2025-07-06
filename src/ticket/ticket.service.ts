@@ -15,6 +15,7 @@ import { Payment } from 'src/payment/payment.entity';
 import { PaymentMethod } from 'src/common/enum/PaymentMethod';
 import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { PaymentStatus } from 'src/common/enum/PaymentStatus';
+import { FilterTicketDTO } from './dto/filterTicketDTO';
 
 @Injectable()
 export class TicketService {
@@ -79,7 +80,7 @@ export class TicketService {
         );
       }
 
-      // validate seatCode phải >= 01 và <= totalSeat cảu vehicle
+      // validate seatCode phải >= 01 và <= totalSeat của vehicle
       const numberSeatCode = parseInt(seatCode.slice(1), 10);
       const totalSeat = trip.vehicle.totalSeat;
       if (numberSeatCode < 1 || numberSeatCode > totalSeat) {
@@ -134,6 +135,10 @@ export class TicketService {
       });
       await querryRunner.manager.save(newTicket);
 
+      // Cập nhật -1 ghế đã đặt trong trip
+      trip.availabelSeat -= 1;
+      await querryRunner.manager.save(trip);
+
       await querryRunner.commitTransaction();
       return newTicket;
     } catch (error) {
@@ -164,6 +169,72 @@ export class TicketService {
       status: 'success',
       message: 'Vé đã được hủy thành công',
       ticket,
+    };
+  }
+
+  async getListTicketByUserId(userId: string) {
+    const tickets = await this.ticketRepository.find({
+      where: {
+        user: { userId },
+      },
+      relations: [
+        'trip',
+        'seat',
+        'departLocation',
+        'arrivalLocation',
+        'payment',
+      ],
+    });
+
+    return tickets;
+  }
+
+  async filterTicketPagination(data: FilterTicketDTO) {
+    const { numberPerPage, page, userId, time, ticketStatus, sortBy } = data;
+
+    // Kiểm tra
+
+    // query
+    const queryTicket = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.departLocation', 'departLocation')
+      .leftJoinAndSelect('ticket.arrivalLocation', 'arrivelLocation')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.trip', 'trip')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.payment', 'payment');
+
+    // Có userId
+    if (userId) {
+      queryTicket.andWhere('user.userId = :userId', { userId });
+    }
+
+    // có time
+    if (time) {
+      const { startTime, endTime } = time;
+      endTime?.setHours(23, 59, 59, 999);
+
+      queryTicket.andWhere(
+        'ticket.ticketTime BETWEEN :startTime AND :endTime',
+        { startTime, endTime },
+      );
+    }
+
+    // phân trang
+    const [result, total] = await queryTicket
+      .skip((page - 1) * numberPerPage)
+      .take(numberPerPage)
+      .getManyAndCount();
+
+    return {
+      status: 'success',
+      pagination: {
+        page,
+        numberPerPage,
+        total,
+        totalPage: Math.ceil(total / numberPerPage),
+      },
+      tickets: result,
     };
   }
 }

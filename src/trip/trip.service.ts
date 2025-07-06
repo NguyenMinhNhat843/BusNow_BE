@@ -87,9 +87,9 @@ export class TripService {
 
     // query trips
     const query = this.tripRepository
-      .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.vehicle', 'vehicle')
-      .leftJoinAndSelect('vehicle.transportProvider', 'provider')
+      .createQueryBuilder('trip') // trip là alias: bí danh
+      .leftJoinAndSelect('trip.vehicle', 'v')
+      .leftJoinAndSelect('v.transportProvider', 'provider')
       .where('trip.fromLocationName ILIKE :from', { from: fromLocationName })
       .andWhere('trip.toLocationName ILIKE :to', { to: toLocationName })
       .andWhere('trip.departTime BETWEEN :start AND :end', {
@@ -106,7 +106,7 @@ export class TripService {
 
     // Lọc theo loại xe - VIP/STANDARD/LIMOUSE
     if (vehicleSubType?.length) {
-      query.andWhere('vehicle.subType IN (:...vehicleSubType)', {
+      query.andWhere('v.subType IN (:...vehicleSubType)', {
         vehicleSubType,
       });
     }

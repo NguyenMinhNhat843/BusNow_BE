@@ -97,4 +97,16 @@ export class SeatService {
     await this.seatRepository.save(newSeat);
     return newSeat;
   }
+
+  // Lấy danh sách ghế đã đặt trong chuyến đi
+  async getBookedSeatsByTripId(tripId: string): Promise<Seat[]> {
+    const bookedSeats = await this.seatRepository.find({
+      where: {
+        trip: { tripId },
+        isBooked: true,
+      },
+    });
+
+    return bookedSeats;
+  }
 }
