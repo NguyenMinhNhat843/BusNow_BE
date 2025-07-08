@@ -10,6 +10,7 @@ import { TransportType } from 'src/transportProvider/enum/transportEnum';
 import { TransportProvider } from 'src/transportProvider/transportProvider.entity';
 import { Trip } from 'src/trip/trip.entity';
 import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
+import { User } from 'src/user/user.entity';
 
 @Entity()
 export class Vehicle {
@@ -32,13 +33,25 @@ export class Vehicle {
   @Column({ default: true })
   isActive: boolean;
 
+  // Ban đầu là 1 vehicle thuộc về 1 provider
+  // Nhưng bây giwof gộp provider vô bảng user với role = 'provider' luôn r
+  // Nên sẽ bỏ
   @ManyToOne(
-    () => TransportProvider, // Trỏ tới entity cha là transportProvider
+    () => User, // Trỏ tới entity cha là transportProvider
     (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
     { onDelete: 'CASCADE' }, // Nếu xóa provider thì xóa hết vehicles liên quan
   )
   @JoinColumn({ name: 'transportProviderId' })
   transportProvider: TransportProvider;
+
+  // Cái này mới giữ lại
+  @ManyToOne(
+    () => User, // Trỏ tới entity cha là transportProvider
+    (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
+    { onDelete: 'CASCADE' }, // Nếu xóa provider thì xóa hết vehicles liên quan
+  )
+  @JoinColumn({ name: 'providerId' })
+  provider: User;
 
   @OneToMany(() => Trip, (trip) => trip.vehicle)
   trips: Trip[];

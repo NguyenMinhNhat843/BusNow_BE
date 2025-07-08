@@ -15,11 +15,7 @@ export class TransportProviderService {
     return this.transportRepository.save(transportProvider);
   }
 
-  getAll(): Promise<TransportProvider[]> {
-    return this.transportRepository.find();
-  }
-
-  async getVehicleByProvicerId(id: string) {
+  async getVehicleByProviderId(id: string) {
     const result = await this.transportRepository.find({
       where: {
         providerId: id,

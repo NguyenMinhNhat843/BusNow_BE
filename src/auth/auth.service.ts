@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as nodemailer from 'nodemailer';
 import { Subject } from 'rxjs';
 import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
+import { RoleEnum } from 'src/common/enum/RoleEnum';
 
 @Injectable()
 export class AuthService {
@@ -64,7 +65,7 @@ export class AuthService {
     const provider = this.userRepo.create({
       ...data,
       firstName: 'Nhà xe',
-      role: 'PROVIDER',
+      role: RoleEnum.PROVIDER,
       password: passwordHased,
     });
     return this.userRepo.save(provider);

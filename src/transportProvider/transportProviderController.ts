@@ -3,8 +3,16 @@ import { TransportProviderService } from './transportProviderService';
 import { CreateProviderDTO } from './dto/createProviderDTO';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/user/guards/roles.guard';
+import { Request } from '@nestjs/common';
+
+interface JwtUserPayload {
+  userId: string;
+  email: string;
+  role: string;
+}
 
 @Controller('provider')
+@UseGuards(JwtAuthGuard, new RolesGuard(['admin', 'PROVIDER']))
 export class TransportProviderController {
   constructor(
     private readonly transportProviderService: TransportProviderService,
@@ -15,18 +23,11 @@ export class TransportProviderController {
     return this.transportProviderService.create(transportProvider);
   }
 
-  @Get()
-  async findAll() {
-    return this.transportProviderService.getAll();
-  }
-
   @Get('get-vehicle-me')
-  @UseGuards(JwtAuthGuard, new RolesGuard(['admin', 'PROVIDER']))
-  async getVehicleByMe(@Req() req: any) {
+  async getVehicleByMe(@Req() req: Request & { user: JwtUserPayload }) {
     // console.log('req: ', req);
     const user = req.user;
-    console.log('user: ', user);
-    const result = await this.transportProviderService.getVehicleByProvicerId(
+    const result = await this.transportProviderService.getVehicleByProviderId(
       user.userId,
     );
     return {
@@ -34,4 +35,7 @@ export class TransportProviderController {
       data: result,
     };
   }
+
+  @Post('create-vehicle')
+  async createVehicle() {}
 }

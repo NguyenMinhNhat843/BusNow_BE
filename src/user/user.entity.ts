@@ -1,6 +1,9 @@
+import { RoleEnum } from 'src/common/enum/roleEnum';
 import { Payment } from 'src/payment/payment.entity';
 import { Ticket } from 'src/ticket/ticket.entity';
-import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { TransportType } from 'src/transportProvider/enum/transportEnum';
+import { Vehicle } from 'src/vehicle/vehicle.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class User {
@@ -16,6 +19,7 @@ export class User {
   @Column()
   lastName: string;
 
+  // Đối với provider thì là ngày thành lập
   @Column({ nullable: true })
   birthDate: Date;
 
@@ -31,15 +35,28 @@ export class User {
   @Column({ unique: true, nullable: true })
   password: string;
 
+  // Đăng nhập bằng phương thức gì: GOOGLE/FACEBOOK....
   @Column({ nullable: true })
   provider: string;
 
   @Column({ default: true, nullable: true })
   isActive: boolean;
 
-  @Column({ default: 'user' })
-  role: string;
+  @Column({ type: 'enum', enum: RoleEnum, default: RoleEnum.USER })
+  role: RoleEnum;
 
-  @OneToOne(() => Payment, (payment) => payment.user)
-  payment: Payment;
+  @Column({
+    type: 'enum',
+    enum: TransportType,
+    default: TransportType.BUS,
+  })
+  type: string;
+
+  // Một user có thể có nhiều thanh toán
+  @OneToMany(() => Payment, (payment) => payment.user)
+  payments: Payment[];
+
+  // Một user(PROVIDER) sẽ có nhiều vehicle
+  @OneToMany(() => Vehicle, (vehicle) => vehicle.provider)
+  vehicles: Vehicle[];
 }

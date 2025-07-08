@@ -17,8 +17,4 @@ export class VehicleService {
     });
     return vehicle;
   }
-
-  getAll(): Promise<Vehicle[]> {
-    return this.vehicleRepository.find();
-  }
 }
