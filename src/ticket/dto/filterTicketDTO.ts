@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsEmail,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -19,9 +20,9 @@ export class FilterTicketDTO {
   @IsNumber()
   page: number;
 
-  @IsString()
+  @IsEmail()
   @IsOptional()
-  userId?: string;
+  email?: string;
 
   @IsOptional()
   @ValidateNested()

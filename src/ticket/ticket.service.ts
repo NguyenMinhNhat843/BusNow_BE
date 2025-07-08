@@ -191,7 +191,7 @@ export class TicketService {
   }
 
   async filterTicketPagination(data: FilterTicketDTO) {
-    const { numberPerPage, page, userId, time, ticketStatus, sortBy } = data;
+    const { numberPerPage, page, email, time, ticketStatus, sortBy } = data;
 
     // Kiểm tra
 
@@ -206,8 +206,8 @@ export class TicketService {
       .leftJoinAndSelect('ticket.payment', 'payment');
 
     // Có userId
-    if (userId) {
-      queryTicket.andWhere('user.userId = :userId', { userId });
+    if (email) {
+      queryTicket.andWhere('user.email = :email', { email });
     }
 
     // có time

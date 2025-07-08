@@ -8,6 +8,7 @@ import { LoginDTO } from './dto/LoginDTO';
 import { JwtService } from '@nestjs/jwt';
 import * as nodemailer from 'nodemailer';
 import { Subject } from 'rxjs';
+import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 
 @Injectable()
 export class AuthService {
@@ -49,6 +50,24 @@ export class AuthService {
       password: hashedPassword,
     });
     return this.userRepo.save(user);
+  }
+
+  // register provider
+  async registerProvider(data: RegisterProviderDTO) {
+    // Kiểm tra tên nhà xe đã trùng chưa
+    // Kiểm tra email đã dùng chưa
+    // Kiểm tra số điện thoại đã dùng chưa
+    // hash password
+    const passwordHased = await bcrypt.hash(data.password, 10);
+
+    // create
+    const provider = this.userRepo.create({
+      ...data,
+      firstName: 'Nhà xe',
+      role: 'PROVIDER',
+      password: passwordHased,
+    });
+    return this.userRepo.save(provider);
   }
 
   // login

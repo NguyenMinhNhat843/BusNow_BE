@@ -5,7 +5,7 @@ import { Vehicle } from 'src/vehicle/vehicle.entity';
 @Entity()
 export class TransportProvider {
   @PrimaryGeneratedColumn('uuid')
-  transportProviderId: string;
+  providerId: string;
 
   @Column()
   name: string;

@@ -16,6 +16,7 @@ import { LoginDTO } from './dto/LoginDTO';
 import { AuthGuard } from '@nestjs/passport';
 import { changePasswordDTO } from './dto/changePasswordDTO';
 import { Response } from 'express';
+import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 
 @Controller('auth')
 export class AuthController {
@@ -45,6 +46,16 @@ export class AuthController {
       throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn!');
     }
     return this.authService.register(body);
+  }
+
+  @Post('register-provider')
+  async registerProvider(@Body() body: RegisterProviderDTO) {
+    const response = await this.authService.registerProvider(body);
+
+    return {
+      status: 'success',
+      data: response,
+    };
   }
 
   @Get('login')
