@@ -1,10 +1,12 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Trip } from 'src/trip/trip.entity';
 import { User } from 'src/user/user.entity';
@@ -38,11 +40,7 @@ export class Vehicle {
 
   // Mỗi xe chỉ chyaj route và time cố định để generate trip tự động
   @Column({ nullable: true })
-  departTime: Date;
-
-  // Số ngày lặp lại để lên lịch - tính = route.duration * 2 (vòn đi và về) + rest / 8
-  @Column({ nullable: true })
-  repeatsDay: number;
+  departHour: string;
 
   @ManyToOne(
     () => User, // Trỏ tới entity cha là transportProvider
@@ -54,4 +52,10 @@ export class Vehicle {
 
   @OneToMany(() => Trip, (trip) => trip.vehicle)
   trips: Trip[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

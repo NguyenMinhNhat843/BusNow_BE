@@ -21,6 +21,9 @@ export class Trip {
   price: number;
 
   @Column()
+  departDate: string;
+
+  @Column()
   availabelSeat: number;
 
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })

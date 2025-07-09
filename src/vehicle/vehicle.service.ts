@@ -34,11 +34,11 @@ export class VehicleService {
   }
 
   async createVehicle(data: CreateVehicleDTO) {
-    const { code, totalSeat, busType, providerId, routeId, departTime } = data;
+    const { code, totalSeat, busType, providerId, routeId, departHour } = data;
     // Kiểm tra code - biển số xe đã tồn tại chưa
     const vehicleExists = await this.vehicleRepository.findOne({
       where: {
-        code: data.code,
+        code: code,
       },
     });
     if (vehicleExists) {
@@ -50,7 +50,7 @@ export class VehicleService {
     // Kiểm tra routerId
     const route = await this.routeRepo.findOne({
       where: {
-        routeId: data.routeId,
+        routeId: routeId,
       },
     });
     if (!route) {
@@ -76,9 +76,9 @@ export class VehicleService {
     }
 
     // Tính repeatsDay
-    const repeatsDay = Math.ceil(
-      (route.duration * 2 + route.restAtDestination) / 8,
-    );
+    // const repeatsDay = Math.ceil(
+    //   (route.duration * 2 + route.restAtDestination) / 8,
+    // );
 
     // Taoj vehicle
     const vehicle = this.vehicleRepository.create({
@@ -87,12 +87,51 @@ export class VehicleService {
       busType,
       provider,
       route,
-      departTime,
-      repeatsDay,
+      departHour,
       isActive: true,
     });
 
     await this.vehicleRepository.save(vehicle);
     return vehicle;
+  }
+
+  async getVehicles(page = 1, limit = 10, providerId?: string) {
+    const skip = (page - 1) * limit;
+
+    const query = this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('vehicle.provider', 'provider')
+      .select([
+        'vehicle.vehicleId',
+        'vehicle.code',
+        'vehicle.totalSeat',
+        'vehicle.isActive',
+        'vehicle.busType',
+        'route.routeId',
+        'route.duration',
+        'route.restAtDestination',
+        'route.repeatsDay',
+        'vehicle.departHour',
+      ])
+      .skip(skip)
+      .limit(limit)
+      .orderBy('vehicle.createdAt', 'DESC');
+
+    if (providerId) {
+      query.andWhere('provider.userId = :userId', { userId: providerId });
+    }
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit),
+      },
+      data,
+    };
   }
 }

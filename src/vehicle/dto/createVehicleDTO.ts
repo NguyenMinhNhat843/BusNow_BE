@@ -1,15 +1,10 @@
-import { Optional } from '@nestjs/common';
 import {
-  IsBoolean,
-  IsDateString,
   IsEnum,
   IsNumber,
   IsOptional,
   IsString,
   Matches,
 } from 'class-validator';
-import { VehicleTypeEnum } from 'src/common/enum/VehicleTypeEnum';
-import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
 import { BusTypeEnum } from 'src/enum/BusTypeEnum';
 
 export class CreateVehicleDTO {
@@ -34,8 +29,9 @@ export class CreateVehicleDTO {
   @IsString()
   routeId: string;
 
-  @IsDateString()
-  departTime: Date;
-
-  repeatsDay?: number;
+  @IsString()
+  @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
+    message: 'Giờ chạy phải có định dạng HH:mm (ví dụ: 09:00 hoặc 22:30)',
+  })
+  departHour: string; // Giờ chạy mỗi ngày
 }

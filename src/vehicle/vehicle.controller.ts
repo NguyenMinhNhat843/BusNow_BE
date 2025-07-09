@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -38,5 +39,23 @@ export class VehicleController {
       status: 'success',
       data: response,
     };
+  }
+
+  @Get('list')
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN, RoleEnum.PROVIDER]))
+  async getVehicles(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    const user = req.user;
+
+    const response = await this.vehicleService.getVehicles(
+      Number(page),
+      Number(limit),
+      user.role === RoleEnum.PROVIDER ? user.userId : undefined,
+    );
+
+    return response;
   }
 }
