@@ -52,18 +52,6 @@ export class AuthService {
       }
     }
 
-    // Kiểm tra role === user thì type là null
-    if (data.role === RoleEnum.USER && data.type) {
-      data.type = null;
-    }
-
-    // Còn role === provider thì type = BUS/TRAIN/PLANE
-    if (data.role === RoleEnum.PROVIDER && !data.type) {
-      throw new BadRequestException(
-        'Provider phải có loại phương tiện: BUS/TRAIN/PLANE',
-      );
-    }
-
     // kiểm tra tồn tại user
     const existsUser = await this.userRepo.findOneBy({ email: data.email });
     if (existsUser) {

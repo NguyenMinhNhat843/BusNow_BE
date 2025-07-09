@@ -1,6 +1,7 @@
 import { Optional } from '@nestjs/common';
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -9,12 +10,9 @@ import {
 } from 'class-validator';
 import { VehicleTypeEnum } from 'src/common/enum/VehicleTypeEnum';
 import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
+import { BusTypeEnum } from 'src/enum/BusTypeEnum';
 
 export class CreateVehicleDTO {
-  // id tự gen ra - nên không cần bỏ vô DTO
-  // @IsString()
-  // vehicleId: string;
-
   @IsString()
   @Matches(/^\d{2}[A-Z]-\d{3}\.\d{2}$/, {
     message:
@@ -25,22 +23,19 @@ export class CreateVehicleDTO {
   @IsNumber()
   totalSeat: number;
 
-  @IsEnum(VehicleTypeEnum, { message: 'Vehicle phải là BUS/TRAIN/PLANE' })
-  type: VehicleTypeEnum; // Loại phương tiện: BUS/TRAIN/PLANE
-
-  // Mặc định là false rồi chờ admin duyệt
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
+  @IsEnum(BusTypeEnum, { message: 'Xe chỉ có thể là VIP/STANDRD/LIMOUSINE' })
+  busType: BusTypeEnum;
 
   // Cái này lấy userId trong jwt ra
   @IsString()
   @IsOptional()
   providerId?: string;
 
-  @IsOptional()
-  @IsEnum(VehicleTypeBus, {
-    message: 'Nếu Vehicle là BUS thì phải có loại xe: VIP/LIMOUSINE/STANDARD',
-  })
-  subType?: VehicleTypeBus; // Nếu là BUS thì là xe VIP/LIMOUSINE/STANDARD
+  @IsString()
+  routeId: string;
+
+  @IsDateString()
+  departTime: Date;
+
+  repeatsDay?: number;
 }

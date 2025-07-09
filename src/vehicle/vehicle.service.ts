@@ -11,6 +11,7 @@ import { CreateVehicleDTO } from './dto/createVehicleDTO';
 import { UserService } from 'src/user/user.service';
 import { User } from 'src/user/user.entity';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
+import { Route } from 'src/route/route.entity';
 
 @Injectable()
 export class VehicleService {
@@ -20,6 +21,9 @@ export class VehicleService {
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
+
+    @InjectRepository(Route)
+    private routeRepo: Repository<Route>,
   ) {}
 
   findVehicleByIdOrCodeNumber(keyword: string) {
@@ -30,16 +34,27 @@ export class VehicleService {
   }
 
   async createVehicle(data: CreateVehicleDTO) {
+    const { code, totalSeat, busType, providerId, routeId, departTime } = data;
     // Kiểm tra code - biển số xe đã tồn tại chưa
-    const vehicle = await this.vehicleRepository.findOne({
+    const vehicleExists = await this.vehicleRepository.findOne({
       where: {
         code: data.code,
       },
     });
-    if (vehicle) {
+    if (vehicleExists) {
       throw new BadRequestException(
-        `Biển số xe ${vehicle.code} đã tồn tại rồi`,
+        `Biển số xe ${vehicleExists.code} đã tồn tại rồi`,
       );
+    }
+
+    // Kiểm tra routerId
+    const route = await this.routeRepo.findOne({
+      where: {
+        routeId: data.routeId,
+      },
+    });
+    if (!route) {
+      throw new NotFoundException('Tuyến đường này không tồn tại!!!');
     }
 
     // Kiểm tra providerId có tồn tại không
@@ -60,12 +75,24 @@ export class VehicleService {
       throw new BadRequestException('Người dùng này không phải nhà cung cấp');
     }
 
-    // Tạo
-    const result = this.vehicleRepository.create({
-      ...data,
+    // Tính repeatsDay
+    const repeatsDay = Math.ceil(
+      (route.duration * 2 + route.restAtDestination) / 8,
+    );
+
+    // Taoj vehicle
+    const vehicle = this.vehicleRepository.create({
+      code,
+      totalSeat,
+      busType,
       provider,
+      route,
+      departTime,
+      repeatsDay,
+      isActive: true,
     });
-    await this.vehicleRepository.save(result);
-    return result;
+
+    await this.vehicleRepository.save(vehicle);
+    return vehicle;
   }
 }

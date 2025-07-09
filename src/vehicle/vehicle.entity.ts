@@ -6,45 +6,44 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { TransportType } from 'src/transportProvider/enum/transportEnum';
-import { TransportProvider } from 'src/transportProvider/transportProvider.entity';
 import { Trip } from 'src/trip/trip.entity';
-import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
 import { User } from 'src/user/user.entity';
+import { BusTypeEnum } from 'src/enum/BusTypeEnum';
+import { Route } from 'src/route/route.entity';
 
 @Entity()
 export class Vehicle {
   @PrimaryGeneratedColumn('uuid')
   vehicleId: string;
 
+  // biển số xe
   @Column({ unique: true })
   code: string;
 
+  // số ghế
   @Column()
   totalSeat: number;
-
-  @Column({
-    type: 'enum',
-    enum: TransportType,
-    default: TransportType.BUS,
-  })
-  type: string;
 
   @Column({ default: true })
   isActive: boolean;
 
-  // Ban đầu là 1 vehicle thuộc về 1 provider
-  // Nhưng bây giwof gộp provider vô bảng user với role = 'provider' luôn r
-  // Nên sẽ bỏ
-  @ManyToOne(
-    () => User, // Trỏ tới entity cha là transportProvider
-    (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
-    { onDelete: 'CASCADE', nullable: true }, // Nếu xóa provider thì xóa hết vehicles liên quan
-  )
-  @JoinColumn({ name: 'transportProviderId' })
-  transportProvider: TransportProvider;
+  // xe VIP/STANDARD/LIMOUSINE
+  @Column({ type: 'enum', enum: BusTypeEnum, default: BusTypeEnum.STANDARD })
+  busType: BusTypeEnum;
 
-  // Cái này mới giữ lại
+  // Xe này chạy tuyến đường nào, mỗi xe chỉ chạy 1 tuyến đường
+  @ManyToOne(() => Route)
+  @JoinColumn({ name: 'routeId' })
+  route: Route;
+
+  // Mỗi xe chỉ chyaj route và time cố định để generate trip tự động
+  @Column({ nullable: true })
+  departTime: Date;
+
+  // Số ngày lặp lại để lên lịch - tính = route.duration * 2 (vòn đi và về) + rest / 8
+  @Column({ nullable: true })
+  repeatsDay: number;
+
   @ManyToOne(
     () => User, // Trỏ tới entity cha là transportProvider
     (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
@@ -55,12 +54,4 @@ export class Vehicle {
 
   @OneToMany(() => Trip, (trip) => trip.vehicle)
   trips: Trip[];
-
-  // Chỉ có khi là BUS
-  @Column({
-    type: 'enum',
-    enum: VehicleTypeBus,
-    nullable: true,
-  })
-  subType: string;
 }

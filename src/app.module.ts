@@ -1,23 +1,18 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmDataSourceFactory, TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { S3Module } from './s3/s3.module';
-import { TransportProviderModule } from './transportProvider/transport.module';
 import { VehicleModule } from './vehicle/vehicle.module';
-import { Trip } from './trip/trip.entity';
 import { TripModule } from './trip/trip.module';
-import { User } from './user/user.entity';
-import { TransportProvider } from './transportProvider/transportProvider.entity';
-import { Vehicle } from './vehicle/vehicle.entity';
-import { Location } from './location/location.entity';
 import { LocationModule } from './location/location.module';
 import { LocationDetailModule } from './locationDetail/locationDetail.module';
 import { SeatModule } from './seat/seat.module';
 import { TicketModule } from './ticket/ticket.module';
 import { PaymentModue } from './payment/payment.module';
 import { ProviderModule } from './provider/provider.module';
+import { RouteModule } from './route/route.module';
 
 @Module({
   imports: [
@@ -33,13 +28,13 @@ import { ProviderModule } from './provider/provider.module';
       password: process.env.DB_PASSWORD || '123456789',
       database: process.env.DB_NAME || 'BusNow',
       autoLoadEntities: true,
-      synchronize: true, // Chỉ sử dụng trong môi trường phát triển
+      synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
     }),
     AuthModule,
     UserModule,
     ProviderModule,
-    TransportProviderModule,
     VehicleModule,
+    RouteModule,
     TripModule,
     LocationModule,
     LocationDetailModule,

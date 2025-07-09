@@ -12,7 +12,6 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
-import { TransportType } from 'src/transportProvider/enum/transportEnum';
 
 export class RegisterDTO {
   @IsEmail({}, { message: 'Email không hợp lệ' })
@@ -38,12 +37,6 @@ export class RegisterDTO {
   @IsString()
   @IsOptional()
   address?: string;
-
-  @IsEnum(TransportType, {
-    message: 'Nếu là provider thì phải có loại phương tiện',
-  })
-  @IsOptional()
-  type?: TransportType | null;
 
   // otp
   @IsNotEmpty({ message: 'Mã OTP không được để trống' })

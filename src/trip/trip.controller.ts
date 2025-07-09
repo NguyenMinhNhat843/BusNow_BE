@@ -17,27 +17,15 @@ export class TripController {
   async searchTrip(@Query() query: SearchTripDTO) {
     const response = await this.tripService.searchTrip(query);
     const formattedTrips = response.trips.map((trip) => {
-      const departTimeVN = DateTime.fromISO(trip.departTime.toISOString())
-        .setZone('Asia/Ho_Chi_Minh')
-        .toFormat('HH:mm dd/MM/yyyy');
-      const arriveTimeVN = DateTime.fromISO(trip.arriveTime.toISOString())
-        .setZone('Asia/Ho_Chi_Minh')
-        .toFormat('HH:mm dd/MM/yyyy');
-
       return {
         tripId: trip.tripId,
         price: trip.price,
-        departTime: departTimeVN,
-        arriveTime: arriveTimeVN,
         availableSeat: trip.availabelSeat,
         totalSeat: trip.vehicle?.totalSeat,
-        fromLocationName: trip.fromLocationName,
-        toLocationName: trip.toLocationName,
-        codeNumber: trip.codeNumber,
-        typeVehicle: trip.vehicle?.type,
-        subTypeVehicle: trip.vehicle?.subType,
-        nameProvider: trip.vehicle?.transportProvider?.name,
-        avatarProvider: trip.vehicle?.transportProvider?.logo,
+        // codeNumber: trip.codeNumber,
+        busType: trip.vehicle.busType,
+        nameProvider: trip.vehicle.provider.lastName,
+        avatarProvider: trip.vehicle.provider.avatar,
       };
     });
 

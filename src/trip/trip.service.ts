@@ -12,12 +12,16 @@ import { LocationService } from 'src/location/locationService';
 import { VehicleService } from 'src/vehicle/vehicle.service';
 import { DateTime } from 'luxon';
 import { SortByEnum } from 'src/common/enum/SortByEnum';
+import { GenTripDTO } from './dto/genTripDTO';
+import { Vehicle } from 'src/vehicle/vehicle.entity';
 
 @Injectable()
 export class TripService {
   constructor(
     @InjectRepository(Trip)
     private readonly tripRepository: Repository<Trip>,
+    @InjectRepository(Vehicle)
+    private vehicleRepository: Repository<Vehicle>,
     private locationService: LocationService,
     private vehicleService: VehicleService,
   ) {}
@@ -198,7 +202,6 @@ export class TripService {
     const existsTrip = await this.tripRepository.findOne({
       where: {
         vehicle: { code: data.vehicleCodeNumber },
-        departTime: Equal(data.departTime),
       },
       relations: ['vehicle'],
     });
@@ -210,35 +213,33 @@ export class TripService {
 
     // Kiểm tra địa điểm hiện tại của xe có đúng là điểm khởi hành không
     // Kiểm tra thời gian khởi hành phải >= ariveTime của chuyến đi trước đó
-    const lastTrip = await this.tripRepository.findOne({
-      where: {
-        vehicle: { code: data.vehicleCodeNumber },
-      },
-      order: { departTime: 'DESC' },
-    });
-    if (lastTrip) {
-      if (
-        data.fromLocationName.trim().toLowerCase() !==
-        lastTrip.toLocationName.trim().toLowerCase()
-      ) {
-        throw new BadRequestException(
-          `Phương tiện ${vehicle.code} hiện đang ở ${lastTrip.toLocationName}, không thể tạo chuyến đi từ ${data.fromLocationName}!!`,
-        );
-      }
+    // const lastTrip = await this.tripRepository.findOne({
+    //   where: {
+    //     vehicle: { code: data.vehicleCodeNumber },
+    //   },
+    // });
+    // if (lastTrip) {
+    //   if (
+    //     data.fromLocationName.trim().toLowerCase() !==
+    //     lastTrip.toLocationName.trim().toLowerCase()
+    //   ) {
+    //     throw new BadRequestException(
+    //       `Phương tiện ${vehicle.code} hiện đang ở ${lastTrip.toLocationName}, không thể tạo chuyến đi từ ${data.fromLocationName}!!`,
+    //     );
+    //   }
 
-      // Cho tài xế nghỉ 8 tiếng trước khi bắt đầu chuyến mới
-      const arriveTime = new Date(lastTrip.arriveTime);
-      const minNextDepartTime = new Date(
-        arriveTime.getTime() + 8 * 60 * 60 * 1000,
-      ); // 8 tiếng sau
-      const dtoDepartTime = new Date(data.departTime);
+    //   // Cho tài xế nghỉ 8 tiếng trước khi bắt đầu chuyến mới
+    //   const minNextDepartTime = new Date(
+    //     arriveTime.getTime() + 8 * 60 * 60 * 1000,
+    //   ); // 8 tiếng sau
+    //   const dtoDepartTime = new Date(data.departTime);
 
-      if (dtoDepartTime < minNextDepartTime) {
-        throw new BadRequestException(
-          `Tài xế phải nghỉ ít nhất 8 giờ. Chuyến tiếp theo phải bắt đầu sau ${minNextDepartTime.toLocaleString()}.`,
-        );
-      }
-    }
+    //   if (dtoDepartTime < minNextDepartTime) {
+    //     throw new BadRequestException(
+    //       `Tài xế phải nghỉ ít nhất 8 giờ. Chuyến tiếp theo phải bắt đầu sau ${minNextDepartTime.toLocaleString()}.`,
+    //     );
+    //   }
+    // }
 
     // tạo trip
     const tripData = {
@@ -257,5 +258,27 @@ export class TripService {
     await this.tripRepository.save(trip);
 
     return trip;
+  }
+
+  // generate trip theo trước 1 khaongr thời gian
+  async genTrip(data: GenTripDTO) {
+    // kiểm tra vehicleId có tồn tại không
+    const vehicle = await this.vehicleRepository.findOne({
+      where: {
+        vehicleId: data.vehicleId,
+      },
+    });
+    if (!vehicle) {
+      throw new NotFoundException('Vehicle không tồn tại');
+    }
+
+    // Generate
+    for (let i = 0; i < data.time; ++i) {
+      const tripObj = {
+        price: data.price,
+        availabelSeat: vehicle.totalSeat,
+        vehicle,
+      };
+    }
   }
 }

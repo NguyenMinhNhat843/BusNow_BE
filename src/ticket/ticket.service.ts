@@ -117,7 +117,6 @@ export class TicketService {
       const newSeat = querryRunner.manager.create(Seat, {
         seatCode,
         trip,
-        typeSeat: trip.vehicle.type === 'BUS' ? null : typeSeat,
         isBooked: true,
       });
       await querryRunner.manager.save(newSeat);

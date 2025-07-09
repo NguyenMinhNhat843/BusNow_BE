@@ -20,33 +20,8 @@ export class Trip {
   @Column()
   price: number;
 
-  @Column({ type: 'timestamptz', nullable: true })
-  departTime: Date;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  arriveTime: Date;
-
   @Column()
   availabelSeat: number;
-
-  @Column({ nullable: true })
-  fromLocationName: string;
-
-  @Column({ nullable: true })
-  toLocationName: string;
-
-  @Column({ nullable: true })
-  codeNumber: string; // biển số xe
-
-  @ManyToOne(() => Location)
-  @JoinColumn({
-    name: 'fromLocationId',
-  })
-  from: Location;
-
-  @ManyToOne(() => Location)
-  @JoinColumn({ name: 'toLocationId' })
-  to: Location;
 
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicleId' })

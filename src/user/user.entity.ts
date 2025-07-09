@@ -1,7 +1,7 @@
+import { Router } from 'express';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { Payment } from 'src/payment/payment.entity';
-import { Ticket } from 'src/ticket/ticket.entity';
-import { TransportType } from 'src/transportProvider/enum/transportEnum';
+import { Route } from 'src/route/route.entity';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
@@ -42,14 +42,6 @@ export class User {
   @Column({ default: true, nullable: true })
   isActive: boolean;
 
-  @Column({
-    type: 'enum',
-    enum: TransportType,
-    nullable: true,
-    default: null,
-  })
-  type: TransportType | null;
-
   @Column({ type: 'enum', enum: RoleEnum, default: RoleEnum.USER })
   role: RoleEnum;
 
@@ -60,4 +52,8 @@ export class User {
   // Một user(PROVIDER) sẽ có nhiều vehicle
   @OneToMany(() => Vehicle, (vehicle) => vehicle.provider)
   vehicles: Vehicle[];
+
+  // Một provider sẽ có nhiều router của họ
+  @OneToMany(() => Route, (r) => r.provider)
+  routers: Router[];
 }

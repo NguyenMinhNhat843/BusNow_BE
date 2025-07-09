@@ -83,15 +83,6 @@ export class SeatService {
     // Taoj seat
     const newSeat = this.seatRepository.create({
       seatCode,
-      typeSeat:
-        vehicle.type === 'BUS'
-          ? null
-          : (data.typeSeat ??
-            (() => {
-              throw new BadRequestException(
-                'typeSeat là bắt buộc khi phương tiện không phải là BUS',
-              );
-            })()),
       trip,
     });
     await this.seatRepository.save(newSeat);
