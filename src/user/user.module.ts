@@ -10,6 +10,6 @@ import { S3Module } from 'src/s3/s3.module';
   imports: [TypeOrmModule.forFeature([User]), S3Module],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService],
+  exports: [UserService, TypeOrmModule],
 })
 export class UserModule {}

@@ -27,8 +27,14 @@ export class UserService {
     return user;
   }
 
-  async findUserByEmail(email: string) {
-    const user = await this.userRepo.findOneBy({ email: email });
+  async findUserByEmail(key: string) {
+    // Kiểm tra key có phải email không (đơn giản bằng regex)
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(key);
+
+    const user = isEmail
+      ? await this.userRepo.findOneBy({ email: key })
+      : await this.userRepo.findOneBy({ userId: key });
+
     return user;
   }
 

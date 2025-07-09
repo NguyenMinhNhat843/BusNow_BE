@@ -40,6 +40,31 @@ export class AuthService {
 
   // register
   async register(data: RegisterDTO) {
+    // Kiểm tra nếu không phải admin tạo nội bộ --> phải kiểm tra otp
+    if (!data.isInternalAdminCreate && data.role !== RoleEnum.ADMIN) {
+      if (!data.otp) {
+        throw new BadRequestException('Vui lòng nhập mã OTP');
+      }
+
+      const isValidOTP = this.verifyOtp(data.email, data.otp);
+      if (!isValidOTP) {
+        throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn');
+      }
+    }
+
+    // Kiểm tra role === user thì type là null
+    if (data.role === RoleEnum.USER && data.type) {
+      data.type = null;
+    }
+
+    // Còn role === provider thì type = BUS/TRAIN/PLANE
+    if (data.role === RoleEnum.PROVIDER && !data.type) {
+      throw new BadRequestException(
+        'Provider phải có loại phương tiện: BUS/TRAIN/PLANE',
+      );
+    }
+
+    // kiểm tra tồn tại user
     const existsUser = await this.userRepo.findOneBy({ email: data.email });
     if (existsUser) {
       throw new BadRequestException('Email đã được đăng ký!!!');

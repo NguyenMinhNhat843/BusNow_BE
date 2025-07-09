@@ -17,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { changePasswordDTO } from './dto/changePasswordDTO';
 import { Response } from 'express';
 import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
+import { RoleEnum } from 'src/common/enum/RoleEnum';
 
 @Controller('auth')
 export class AuthController {
@@ -41,10 +42,6 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDTO) {
-    const isValid = this.authService.verifyOtp(body.email, body.otp);
-    if (!isValid) {
-      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn!');
-    }
     return this.authService.register(body);
   }
 

@@ -17,7 +17,7 @@ export class Vehicle {
   @PrimaryGeneratedColumn('uuid')
   vehicleId: string;
 
-  @Column()
+  @Column({ unique: true })
   code: string;
 
   @Column()
@@ -39,7 +39,7 @@ export class Vehicle {
   @ManyToOne(
     () => User, // Trỏ tới entity cha là transportProvider
     (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
-    { onDelete: 'CASCADE' }, // Nếu xóa provider thì xóa hết vehicles liên quan
+    { onDelete: 'CASCADE', nullable: true }, // Nếu xóa provider thì xóa hết vehicles liên quan
   )
   @JoinColumn({ name: 'transportProviderId' })
   transportProvider: TransportProvider;
@@ -48,7 +48,7 @@ export class Vehicle {
   @ManyToOne(
     () => User, // Trỏ tới entity cha là transportProvider
     (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
-    { onDelete: 'CASCADE' }, // Nếu xóa provider thì xóa hết vehicles liên quan
+    { onDelete: 'CASCADE', nullable: true }, // Nếu xóa provider thì xóa hết vehicles liên quan
   )
   @JoinColumn({ name: 'providerId' })
   provider: User;

@@ -1,4 +1,4 @@
-import { RoleEnum } from 'src/common/enum/roleEnum';
+import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { Payment } from 'src/payment/payment.entity';
 import { Ticket } from 'src/ticket/ticket.entity';
 import { TransportType } from 'src/transportProvider/enum/transportEnum';
@@ -42,15 +42,16 @@ export class User {
   @Column({ default: true, nullable: true })
   isActive: boolean;
 
-  @Column({ type: 'enum', enum: RoleEnum, default: RoleEnum.USER })
-  role: RoleEnum;
-
   @Column({
     type: 'enum',
     enum: TransportType,
-    default: TransportType.BUS,
+    nullable: true,
+    default: null,
   })
-  type: string;
+  type: TransportType | null;
+
+  @Column({ type: 'enum', enum: RoleEnum, default: RoleEnum.USER })
+  role: RoleEnum;
 
   // Một user có thể có nhiều thanh toán
   @OneToMany(() => Payment, (payment) => payment.user)

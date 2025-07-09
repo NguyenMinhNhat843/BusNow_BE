@@ -17,6 +17,7 @@ import { LocationDetailModule } from './locationDetail/locationDetail.module';
 import { SeatModule } from './seat/seat.module';
 import { TicketModule } from './ticket/ticket.module';
 import { PaymentModue } from './payment/payment.module';
+import { ProviderModule } from './provider/provider.module';
 
 @Module({
   imports: [
@@ -34,8 +35,9 @@ import { PaymentModue } from './payment/payment.module';
       autoLoadEntities: true,
       synchronize: true, // Chỉ sử dụng trong môi trường phát triển
     }),
-    UserModule,
     AuthModule,
+    UserModule,
+    ProviderModule,
     TransportProviderModule,
     VehicleModule,
     TripModule,
