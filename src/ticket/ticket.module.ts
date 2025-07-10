@@ -2,16 +2,16 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Ticket } from './ticket.entity';
 import { TicketService } from './ticket.service';
-import { LocationDetailModule } from 'src/locationDetail/locationDetail.module';
 import { TripModule } from 'src/trip/trip.module';
 import { SeatModule } from 'src/seat/seat.module';
 import { VehicleModule } from 'src/vehicle/vehicle.module';
 import { ticketController } from './ticket.controller';
+import { StopPointModule } from 'src/stopPoint/stopPoint.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Ticket]),
-    LocationDetailModule,
+    StopPointModule,
     TripModule,
     SeatModule,
     VehicleModule,

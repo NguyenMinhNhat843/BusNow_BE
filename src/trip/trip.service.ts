@@ -71,10 +71,6 @@ export class TripService {
       );
     }
 
-    // Kiểm tra departTime có >= now không
-    console.log(departTime);
-    console.log(typeof departTime);
-
     // kiểm tra departTime > now
     if (new Date(departTime) < new Date()) {
       throw new BadRequestException(
@@ -99,10 +95,13 @@ export class TripService {
     const query = this.tripRepository
       .createQueryBuilder('trip') // trip là alias: bí danh
       .leftJoinAndSelect('trip.vehicle', 'v')
-      .leftJoinAndSelect('trip.vehicle.route', 'r')
-      .where('r.origin ILIKE :from', { from: fromLocationName })
-      .andWhere('r.destination ILIKE :to', { to: toLocationName })
-      .andWhere('v.departHour BETWEEN :start AND :end', {
+      .leftJoinAndSelect('v.route', 'r')
+      .leftJoinAndSelect('v.provider', 'provider')
+      .leftJoinAndSelect('r.origin', 'o')
+      .leftJoinAndSelect('r.destination', 'd')
+      .where('r.origin = :from', { from: fromLocationName })
+      .andWhere('r.destination = :to', { to: toLocationName })
+      .andWhere('trip.departDate BETWEEN :start AND :end', {
         start: startTimeUTC,
         end: endTimeUTC,
       });
@@ -138,18 +137,31 @@ export class TripService {
         query.orderBy('trip.price', 'DESC');
         break;
       case SortByEnum.DEPARTTIME_ASC:
-        query.orderBy('trip.departTime', 'ASC');
+        query.orderBy('trip.departDate', 'ASC');
         break;
       case SortByEnum.DEPARTTIME_DESC:
-        query.orderBy('trip.departTime', 'DESC');
+        query.orderBy('trip.departDate', 'DESC');
         break;
     }
+
+    // const [sql, params] = query.getQueryAndParameters();
+    // console.log('Query:', sql);
+    // console.log('Params:', params);
 
     // phân trang
     const [results, total] = await query
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
+
+    // map field
+    const trips = results.map((trip) => ({
+      tripId: trip.tripId,
+      price: trip.price,
+      avatarProvider: trip.vehicle.provider.avatar,
+      totalSeat: trip.vehicle.totalSeat,
+      route: trip.vehicle.route,
+    }));
 
     return {
       status: 'success',

@@ -33,15 +33,24 @@ export class TripController {
   async searchTrip(@Query() query: SearchTripDTO) {
     const response = await this.tripService.searchTrip(query);
     const formattedTrips = response.trips.map((trip) => {
+      const departTime = DateTime.fromJSDate(trip.departDate, { zone: 'utc' });
+      const arriveTime = departTime.plus({
+        hours: trip.vehicle?.route?.duration || 0,
+      });
       return {
         tripId: trip.tripId,
         price: trip.price,
         availableSeat: trip.availabelSeat,
         totalSeat: trip.vehicle?.totalSeat,
-        // codeNumber: trip.codeNumber,
+        codeNumber: trip.vehicle.code,
+        vehicleName: trip.vehicle.provider.lastName,
         busType: trip.vehicle.busType,
-        nameProvider: trip.vehicle.provider.lastName,
-        avatarProvider: trip.vehicle.provider.avatar,
+        fromId: trip.vehicle.route.origin.locationId,
+        fromname: trip.vehicle.route.origin.name,
+        departTime: trip.departDate,
+        toId: trip.vehicle.route.origin.locationId,
+        toName: trip.vehicle.route.origin.name,
+        arriveTime: arriveTime,
       };
     });
 

@@ -1,4 +1,4 @@
-import { LocationDetail } from 'src/locationDetail/locationDetail.entity';
+import { StopPoint } from 'src/stopPoint/stopPoint.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
@@ -9,10 +9,6 @@ export class Location {
   @Column()
   name: string;
 
-  @OneToMany(
-    () => LocationDetail,
-    (locationDetail) => locationDetail.location,
-    { onDelete: 'CASCADE' },
-  )
-  locationDetails: LocationDetail[];
+  @OneToMany(() => StopPoint, (sp) => sp.city, { onDelete: 'CASCADE' })
+  stopPoints: StopPoint[];
 }

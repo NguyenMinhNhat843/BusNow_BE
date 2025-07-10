@@ -1,4 +1,5 @@
 import { Location } from 'src/location/location.entity';
+import { StopPoint } from 'src/stopPoint/stopPoint.entity';
 import { User } from 'src/user/user.entity';
 import {
   Column,
@@ -6,6 +7,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -44,4 +46,8 @@ export class Route {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  //
+  @OneToMany(() => StopPoint, (sp) => sp.route)
+  stopPoints: StopPoint[];
 }

@@ -3,16 +3,12 @@ import { DataSource, Repository } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTIcketDTO } from './dto/createTicketDTO';
-import { LocationDetail } from 'src/locationDetail/locationDetail.entity';
-import { Trip } from 'src/trip/trip.entity';
 import { Seat } from 'src/seat/seat.entity';
 import { User } from 'src/user/user.entity';
-import { Vehicle } from 'src/vehicle/vehicle.entity';
-import { LocationDetailService } from 'src/locationDetail/locationDetailService';
+import { StopPointService } from 'src/stopPoint/stopPoint.service';
 import { TripService } from 'src/trip/trip.service';
 import { SeatService } from 'src/seat/seat.service';
 import { Payment } from 'src/payment/payment.entity';
-import { PaymentMethod } from 'src/common/enum/PaymentMethod';
 import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
@@ -23,7 +19,7 @@ export class TicketService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
-    private locationDetailService: LocationDetailService,
+    private locationDetailService: StopPointService,
     private readonly tripService: TripService,
     private readonly seatService: SeatService,
     private dataSource: DataSource,
@@ -123,15 +119,15 @@ export class TicketService {
 
       // Tạo ticket
       const newTicket = querryRunner.manager.create(Ticket, {
-        ticketTime: new Date(),
-        departLocation: departLocationDetail,
-        arrivalLocation: arriveLocatioDetailn,
-        trip,
-        seat: newSeat,
-        seatCode,
-        status: 'UNPAID',
-        user,
-        payment,
+        // ticketTime: new Date(),
+        // departLocation: departLocationDetail,
+        // arrivalLocation: arriveLocatioDetailn,
+        // trip,
+        // seat: newSeat,
+        // seatCode,
+        // status: 'UNPAID',
+        // user,
+        // payment,
       });
       await querryRunner.manager.save(newTicket);
 

@@ -7,7 +7,7 @@ import { S3Module } from './s3/s3.module';
 import { VehicleModule } from './vehicle/vehicle.module';
 import { TripModule } from './trip/trip.module';
 import { LocationModule } from './location/location.module';
-import { LocationDetailModule } from './locationDetail/locationDetail.module';
+import { StopPointModule } from './stopPoint/stopPoint.module';
 import { SeatModule } from './seat/seat.module';
 import { TicketModule } from './ticket/ticket.module';
 import { PaymentModue } from './payment/payment.module';
@@ -37,7 +37,7 @@ import { RouteModule } from './route/route.module';
     RouteModule,
     TripModule,
     LocationModule,
-    LocationDetailModule,
+    StopPointModule,
     SeatModule,
     TicketModule,
     PaymentModue,
