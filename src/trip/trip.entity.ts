@@ -1,14 +1,10 @@
-import { Location } from 'src/location/location.entity';
-import { Seat } from 'src/seat/seat.entity';
-import { Ticket } from 'src/ticket/ticket.entity';
+import { TripStatusEnum } from 'src/enum/TripStatusEnum';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -20,8 +16,8 @@ export class Trip {
   @Column()
   price: number;
 
-  @Column()
-  departDate: string;
+  @Column({ nullable: true })
+  departDate: Date;
 
   @Column()
   availabelSeat: number;
@@ -29,4 +25,15 @@ export class Trip {
   @ManyToOne(() => Vehicle, (vehicle) => vehicle.trips, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicleId' })
   vehicle: Vehicle;
+
+  // Nhận biết chuyến này là đi xuôi hay đi về: go/return
+  @Column({ nullable: true, default: 'go' })
+  type: string;
+
+  @Column({
+    type: 'enum',
+    enum: TripStatusEnum,
+    default: TripStatusEnum.PENDING,
+  })
+  tripStatus: TripStatusEnum;
 }

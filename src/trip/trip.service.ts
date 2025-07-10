@@ -14,6 +14,9 @@ import { DateTime } from 'luxon';
 import { SortByEnum } from 'src/common/enum/SortByEnum';
 import { GenTripDTO } from './dto/genTripDTO';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
+import { addDays, addHours, addMinutes, format } from 'date-fns';
+import { Route } from 'src/route/route.entity';
+import { DeleteTripDTO } from './dto/deleteTripDTO';
 
 @Injectable()
 export class TripService {
@@ -40,6 +43,7 @@ export class TripService {
     const {
       fromLocationName,
       toLocationName,
+      departTime,
       page,
       limit,
       providerName,
@@ -48,6 +52,7 @@ export class TripService {
       maxPrice,
       sortBy,
     } = data;
+
     // Kiểm tra location from có tồn tại ko
     const from =
       await this.locationService.findLocationByNameOrId(fromLocationName);
@@ -66,8 +71,9 @@ export class TripService {
       );
     }
 
-    // Kiểm tra có departTime không
-    const departTime = data.departTime ? data.departTime : new Date();
+    // Kiểm tra departTime có >= now không
+    console.log(departTime);
+    console.log(typeof departTime);
 
     // kiểm tra departTime > now
     if (new Date(departTime) < new Date()) {
@@ -93,10 +99,10 @@ export class TripService {
     const query = this.tripRepository
       .createQueryBuilder('trip') // trip là alias: bí danh
       .leftJoinAndSelect('trip.vehicle', 'v')
-      .leftJoinAndSelect('v.transportProvider', 'provider')
-      .where('trip.fromLocationName ILIKE :from', { from: fromLocationName })
-      .andWhere('trip.toLocationName ILIKE :to', { to: toLocationName })
-      .andWhere('trip.departTime BETWEEN :start AND :end', {
+      .leftJoinAndSelect('trip.vehicle.route', 'r')
+      .where('r.origin ILIKE :from', { from: fromLocationName })
+      .andWhere('r.destination ILIKE :to', { to: toLocationName })
+      .andWhere('v.departHour BETWEEN :start AND :end', {
         start: startTimeUTC,
         end: endTimeUTC,
       });
@@ -267,18 +273,142 @@ export class TripService {
       where: {
         vehicleId: data.vehicleId,
       },
+      relations: ['route', 'route.origin', 'route.destination'],
     });
     if (!vehicle) {
       throw new NotFoundException('Vehicle không tồn tại');
     }
 
-    // Generate
-    for (let i = 0; i < data.time; ++i) {
-      const tripObj = {
+    // Kiểm tra vehicle được gán route vào chưa
+    if (!vehicle.route) {
+      throw new NotFoundException('Vehicle này chưa được gán tuyến đường');
+    }
+
+    //Kiểm tra vehicle đã cso departHour cố định chưa
+    if (!vehicle.departHour) {
+      throw new NotFoundException('Xe chưa gán giờ khởi hành cố định');
+    }
+
+    // Lấy repeatsDay ra để tính toán lên lịch
+    const { repeatsDay } = vehicle.route;
+    const createdTrips: Trip[] = [];
+    const returnTrips: Trip[] = [];
+
+    // Lấy ngày hiện tại làm gốc
+    const today = new Date();
+    const totalCycles = Math.floor(data.time / repeatsDay);
+    for (let i = 0; i < totalCycles; ++i) {
+      // Tính ngày khởi hành cho từng trip - cái này là chuyến đi
+      const departDay = addDays(today, i * repeatsDay);
+
+      // Gộp ngày (ở trên) với giờ (cố định trong vehicle)
+      const fullDepartDate = new Date(
+        `${format(departDay, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
+      );
+
+      // 🔍 Kiểm tra nếu trip đã tồn tại (theo vehicle và departDate)
+      const existed = await this.tripRepository.findOne({
+        where: {
+          vehicle: { vehicleId: vehicle.vehicleId },
+          departDate: fullDepartDate,
+        },
+      });
+
+      if (existed) continue; // bỏ qua nếu đã tồn tại
+
+      // Taoj trip
+      const trip = this.tripRepository.create({
         price: data.price,
         availabelSeat: vehicle.totalSeat,
         vehicle,
-      };
+        departDate: fullDepartDate.toISOString(),
+      });
+
+      createdTrips.push(trip);
+
+      // ============== Tạo tiếp trip chiều về ===================
+      // CHuyến về vẫn sẽ dùng route đó nhưng khác departDate - giwof khởi hành thôi
+      const restAtDestination = vehicle.route.restAtDestination;
+      const duration = vehicle.route.duration;
+      // = deprtDate của trip + duration + rest
+      const returnDepartDate = addHours(
+        fullDepartDate,
+        duration + restAtDestination,
+      );
+
+      const returnTrip = this.tripRepository.create({
+        price: data.price,
+        availabelSeat: vehicle.totalSeat,
+        vehicle,
+        departDate: returnDepartDate.toISOString(),
+        type: 'return',
+      });
+      returnTrips.push(returnTrip);
     }
+
+    await this.tripRepository.save(createdTrips);
+    await this.tripRepository.save(returnTrips);
+
+    return {
+      message: `${createdTrips.length} chuyến đã được tạo thành công`,
+      trips: createdTrips,
+      returnTrips: returnTrips,
+    };
+  }
+
+  // Xóa trip: theo 1 Id, theo mảng Id, xóa trước 1 ngày nào đó, xóa sau 1 ngày nào đó, xóa trong khoảng thời gian,
+  async deleteTrip(options: DeleteTripDTO) {
+    const {
+      afterDate,
+      beforeDate,
+      fromDate,
+      toDate,
+      tripId,
+      tripIds,
+      deleteAll,
+    } = options;
+    const query = this.tripRepository.createQueryBuilder().delete().from(Trip);
+
+    if (deleteAll) {
+      console.log('Xoas all');
+    } else if (tripId) {
+      query.where('tripId = :tripId', { tripId });
+    } else if (tripIds && tripIds.length > 0) {
+      query.where('tripId IN (:...tripIds)', { tripIds });
+    } else if (beforeDate) {
+      query.where('departDate < :before', {
+        before: new Date(`${beforeDate}T00:00:00+07:00`),
+      });
+    } else if (afterDate) {
+      query.where('departDate > :after', {
+        after: new Date(`${afterDate}T00:00:00+07:00`),
+      });
+    } else if (fromDate && toDate) {
+      query.where('departDate BETWEEN :from AND :to', {
+        from: new Date(`${fromDate}T00:00:00+07:00`),
+        to: new Date(`${toDate}T23:59:59+07:00`),
+      });
+    } else {
+      throw new BadRequestException('Không có điều kiện xoá hợp lệ');
+    }
+
+    const result = await query.execute();
+    return {
+      message: `Đã xoá ${result.affected} trip`,
+    };
+  }
+
+  // cancle trip
+  async cancleTrip(tripId: string) {
+    // logic:
+    // Nếu trip return bị lỗi không đi được thì
+    // Chuyển trip.status = CANCELLED
+    // Kiểm tra có trip nào cùng đường không để chuyển các vé qua trip đó
+    // Nếu Không có trip tương đồng thì gửi email xin lỗi và refund lại cho khách
+    // Nếu Có trip tương đồng thì:
+    // kiểm tra vé ghế của trip lỗi có còn trống ở trip tương đồng không, nếu có:
+    // Thì thông báo email thay đổi thông tin chuyến đi
+    // Nếu không thì refund lại cho khách
+    // Còn nếu lỗi ở trip go thì làm tương tự nhưng ở cả 2 trip go vả return luôn
   }
 }
