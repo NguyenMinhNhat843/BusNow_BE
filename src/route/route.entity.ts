@@ -6,6 +6,8 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -47,7 +49,11 @@ export class Route {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  //
-  @OneToMany(() => StopPoint, (sp) => sp.route)
+  @ManyToMany(() => StopPoint, (sp) => sp.routes, { cascade: true })
+  @JoinTable({
+    name: 'route_stop_points', // tên bảng phụ
+    joinColumn: { name: 'routeId', referencedColumnName: 'routeId' },
+    inverseJoinColumn: { name: 'stopPointId', referencedColumnName: 'id' },
+  })
   stopPoints: StopPoint[];
 }

@@ -1,7 +1,19 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { StopPointService } from './stopPoint.service';
+import { SearchStopPointDto } from './dto/SearchStopPoint';
+import { CreateStopPointDto } from './dto/createStopPointDTO';
 
-@Controller('location-detail')
+@Controller('stop-point')
 export class StopPointController {
-  constructor(private LocationDetailService: StopPointService) {}
+  constructor(private stopPointService: StopPointService) {}
+
+  @Get()
+  getStopPoints(@Query() query: SearchStopPointDto) {
+    return this.stopPointService.searchStopPoint(query);
+  }
+
+  @Post()
+  create(@Body() dto: CreateStopPointDto) {
+    return this.stopPointService.createStopPoint(dto);
+  }
 }

@@ -20,8 +20,15 @@ export class RouteController {
 
   @Post('create')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER, RoleEnum.ADMIN]))
-  async createRoute(@Body() body: CreateRouteDTO) {
-    const result = await this.routeService.createRoute(body);
+  async createRoute(
+    @Body() body: CreateRouteDTO,
+    @Req() req: Request & { user: JwtPayload },
+  ) {
+    const user = req.user;
+    const result = await this.routeService.createRoute({
+      ...body,
+      providerId: user.userId,
+    });
     return {
       status: 'success',
       data: result,

@@ -2,11 +2,13 @@ import { StopPointEnum } from 'src/enum/StopPointsEnum';
 import { Location } from 'src/location/location.entity';
 import { Route } from 'src/route/route.entity';
 import { Ticket } from 'src/ticket/ticket.entity';
+import { User } from 'src/user/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -24,12 +26,11 @@ export class StopPoint {
   @Column()
   address: string;
 
-  @Column({ type: 'enum', enum: StopPointEnum })
-  type: StopPointEnum;
+  @Column()
+  cityId: string;
 
-  @ManyToOne(() => Route, (r) => r.stopPoints)
-  @JoinColumn({ name: 'routeId' })
-  route: Route;
+  @ManyToMany(() => Route, (route) => route.stopPoints)
+  routes: Route[];
 
   @ManyToOne(() => Location, (l) => l.stopPoints, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'cityId' })

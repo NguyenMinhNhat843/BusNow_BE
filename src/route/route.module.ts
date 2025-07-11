@@ -5,9 +5,15 @@ import { RouteController } from './route.controller';
 import { RouteService } from './route.service';
 import { UserModule } from 'src/user/user.module';
 import { LocationModule } from 'src/location/location.module';
+import { StopPointModule } from 'src/stopPoint/stopPoint.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Route]), UserModule, LocationModule],
+  imports: [
+    TypeOrmModule.forFeature([Route]),
+    UserModule,
+    LocationModule,
+    StopPointModule,
+  ],
   controllers: [RouteController],
   providers: [RouteService],
   exports: [TypeOrmModule, RouteService],

@@ -1,4 +1,13 @@
-import { IsNumber, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateRouteDTO {
   @IsString()
@@ -13,9 +22,10 @@ export class CreateRouteDTO {
   @IsNumber()
   restAtDestination: number;
 
-  @IsNumber()
-  repeatsDay: number;
-
   @IsString()
-  providerId: string; // userId
+  @IsOptional()
+  providerId?: string; // userId
+
+  @IsArray()
+  stopPointIds: string[];
 }
