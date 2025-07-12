@@ -32,17 +32,42 @@ export class TripService {
   async findTripByID(id: string) {
     const result = await this.tripRepository.findOne({
       where: { tripId: id },
-      relations: ['from', 'to', 'vehicle'],
+      relations: ['vehicle'],
     });
 
     return result;
   }
 
+  async findTripByVehicleId(vehicleId, page: number, limit: number) {
+    const [trips, total] = await this.tripRepository.findAndCount({
+      where: {
+        vehicle: { vehicleId },
+      },
+      relations: ['vehicle'], // nếu muốn include luôn vehicle info
+      order: {
+        departDate: 'ASC',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      status: 'success',
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPage: Math.ceil(total / limit),
+      },
+      trips,
+    };
+  }
+
   // Lọc trip theo from/to/time
   async searchTrip(data: SearchTripDTO) {
     const {
-      fromLocationName,
-      toLocationName,
+      fromLocationId,
+      toLocationId,
       departTime,
       page,
       limit,
@@ -55,7 +80,7 @@ export class TripService {
 
     // Kiểm tra location from có tồn tại ko
     const from =
-      await this.locationService.findLocationByNameOrId(fromLocationName);
+      await this.locationService.findLocationByNameOrId(fromLocationId);
     if (!from) {
       throw new NotFoundException(
         'Địa điểm khởi hành không tồn tại trong hệ thống!!',
@@ -63,8 +88,7 @@ export class TripService {
     }
 
     // kiểm tra to có tồn tại ko
-    const to =
-      await this.locationService.findLocationByNameOrId(toLocationName);
+    const to = await this.locationService.findLocationByNameOrId(toLocationId);
     if (!to) {
       throw new NotFoundException(
         'Địa điểm đến không tồn tại trong hệ thống!!',
@@ -99,11 +123,11 @@ export class TripService {
       .leftJoinAndSelect('v.provider', 'provider')
       .leftJoinAndSelect('r.origin', 'o')
       .leftJoinAndSelect('r.destination', 'd')
-      .where('r.origin = :from', { from: fromLocationName })
-      .andWhere('r.destination = :to', { to: toLocationName })
+      .where('o.locationId = :from', { from: fromLocationId })
+      .andWhere('d.locationId = :to', { to: toLocationId })
       .andWhere('trip.departDate BETWEEN :start AND :end', {
-        start: startTimeUTC,
-        end: endTimeUTC,
+        start: startTimeVN,
+        end: endTimeVN,
       });
 
     // Lọc theo tên nhà xe
@@ -155,13 +179,13 @@ export class TripService {
       .getManyAndCount();
 
     // map field
-    const trips = results.map((trip) => ({
-      tripId: trip.tripId,
-      price: trip.price,
-      avatarProvider: trip.vehicle.provider.avatar,
-      totalSeat: trip.vehicle.totalSeat,
-      route: trip.vehicle.route,
-    }));
+    // const trips = results.map((trip) => ({
+    //   tripId: trip.tripId,
+    //   price: trip.price,
+    //   avatarProvider: trip.vehicle.provider.avatar,
+    //   totalSeat: trip.vehicle.totalSeat,
+    //   route: trip.vehicle.route,
+    // }));
 
     return {
       status: 'success',
@@ -362,6 +386,7 @@ export class TripService {
     await this.tripRepository.save(returnTrips);
 
     return {
+      status: 'success',
       message: `${createdTrips.length} chuyến đã được tạo thành công`,
       trips: createdTrips,
       returnTrips: returnTrips,

@@ -68,33 +68,11 @@ export class RouteService {
     if (!origin) throw new NotFoundException('Điểm đi không tồn tại');
     if (!destination) throw new NotFoundException('Điểm đến không tồn tại');
 
-    // Kiểm tra 2 điểm stopPoint phải cso 1 cái ở origin city, 1 cái ở destination city
-    const stopPoints1 = await this.stopPointRepo.findOne({
-      where: {
-        id: stopPointIds[0],
-      },
-      relations: ['city'],
-    });
-    const stopPoints2 = await this.stopPointRepo.findOne({
-      where: { id: stopPointIds[1] },
-      relations: ['city'],
-    });
-    if (!stopPoints1 || !stopPoints2) {
-      throw new NotFoundException(
-        'Điểm dwungf không tồn tại trong hệ thống, hãy thêm mới trước',
-      );
-    }
-    console.log(stopPoints1);
-    console.log(stopPoints2);
-    const isTrue =
-      (stopPoints1?.cityId === originId &&
-        stopPoints2?.cityId === destinationId) ||
-      (stopPoints1?.cityId === destinationId &&
-        stopPoints2?.cityId === originId);
-    if (!isTrue) {
-      throw new BadRequestException(
-        'StopPoint phải có 1 cái ở origin 1 cái ở détination',
-      );
+    // Tìm stopPoints
+    const stopPoints = await this.stopPointRepo.findByIds(stopPointIds);
+
+    if (stopPoints.length !== stopPointIds.length) {
+      throw new BadRequestException('Một số điểm dừng không tồn tại');
     }
 
     //  Tạo route mới
@@ -105,6 +83,7 @@ export class RouteService {
       restAtDestination,
       repeatsDay: Math.ceil((duration * 2 + restAtDestination) / 8),
       provider,
+      stopPoints: stopPoints,
     });
     await this.routeRepo.save(newRoute);
 

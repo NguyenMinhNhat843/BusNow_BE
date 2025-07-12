@@ -95,12 +95,33 @@ export class VehicleService {
     return vehicle;
   }
 
-  async getVehicles(page = 1, limit = 10, providerId?: string) {
+  async getVehicles(
+    page = 1,
+    limit = 10,
+    providerId?: string,
+    vehicleId?: string,
+  ) {
+    if (vehicleId) {
+      const response = await this.vehicleRepository.findOne({
+        where: {
+          vehicleId: vehicleId,
+        },
+        relations: ['route', 'route.origin', 'route.destination'],
+      });
+
+      return {
+        status: 'success',
+        data: response,
+      };
+    }
+
     const skip = (page - 1) * limit;
 
     const query = this.vehicleRepository
       .createQueryBuilder('vehicle')
       .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('route.origin', 'origin')
+      .leftJoinAndSelect('route.destination', 'destination')
       .leftJoinAndSelect('vehicle.provider', 'provider')
       .select([
         'vehicle.vehicleId',
@@ -113,6 +134,8 @@ export class VehicleService {
         'route.restAtDestination',
         'route.repeatsDay',
         'vehicle.departHour',
+        'origin.name',
+        'destination.name',
       ])
       .skip(skip)
       .limit(limit)

@@ -17,7 +17,7 @@ export class Seat {
   seatId: string;
 
   @Column()
-  seatCode: string; // Mã ghế, ví dụ: "A1", "B2", v.v.
+  seatCode: number;
 
   @Column({ default: false })
   isBooked: boolean;

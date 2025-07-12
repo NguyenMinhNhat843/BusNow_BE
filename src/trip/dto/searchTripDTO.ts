@@ -13,10 +13,10 @@ import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
 
 export class SearchTripDTO {
   @IsString({ message: 'điểm đón phải là chuỗi' })
-  fromLocationName: string;
+  fromLocationId: string;
 
   @IsString({ message: 'điểm đến phải là chuỗi' })
-  toLocationName: string;
+  toLocationId: string;
 
   @IsDateString(
     {},

@@ -46,6 +46,7 @@ export class VehicleController {
   async getVehicles(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Query('vehicleId') vehicleId: string,
     @Req() req: Request & { user: JwtPayload },
   ) {
     const user = req.user;
@@ -54,6 +55,7 @@ export class VehicleController {
       Number(page),
       Number(limit),
       user.role === RoleEnum.PROVIDER ? user.userId : undefined,
+      vehicleId,
     );
 
     return response;

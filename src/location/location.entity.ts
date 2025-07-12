@@ -9,6 +9,6 @@ export class Location {
   @Column()
   name: string;
 
-  @OneToMany(() => StopPoint, (sp) => sp.city, { onDelete: 'CASCADE' })
+  @OneToMany(() => StopPoint, (sp) => sp.city)
   stopPoints: StopPoint[];
 }

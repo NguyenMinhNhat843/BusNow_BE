@@ -19,129 +19,97 @@ export class TicketService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
-    private locationDetailService: StopPointService,
+    private stopPointService: StopPointService,
     private readonly tripService: TripService,
     private readonly seatService: SeatService,
     private dataSource: DataSource,
   ) {}
 
   async createTicket(ticketData: CreateTIcketDTO, user: User) {
-    const querryRunner = this.dataSource.createQueryRunner();
-    await querryRunner.connect();
-    await querryRunner.startTransaction();
-
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
     try {
-      const {
-        departLocationDetailId,
-        arriveLocationDetailId,
-        tripId,
-        seatCode,
-        typeSeat,
-        methodPayment,
-      } = ticketData;
+      const { tripId, seatCode, methodPayment, statusPayment } = ticketData;
 
-      // validate seatCode đúng theo mẫu A01
-      const regex = /^A\d{2}$/;
-      if (!regex.test(seatCode)) {
-        throw new BadRequestException(
-          'Mã ghế không hợp lệ. Vui lòng sử dụng định dạng Axx (ví dụ: A01, A02, ...)',
-        );
-      }
-
-      // Check tồn tại depart locationDetail
-      const departLocationDetail =
-        await this.locationDetailService.findLocationDetailByIdOrName(
-          departLocationDetailId,
-        );
-      if (!departLocationDetail)
-        throw new BadRequestException(
-          'Địa điểm khởi hành không tồn tại trong hệ thống!!',
-        );
-
-      // Check tồn tại arive locationDetail
-      const arriveLocatioDetailn =
-        await this.locationDetailService.findLocationDetailByIdOrName(
-          arriveLocationDetailId,
-        );
-      if (!arriveLocatioDetailn) {
-        throw new BadRequestException(
-          'Địa điểm đến không tồn tại trong hệ thống!!',
-        );
-      }
-
-      // Check tồn tại trip
+      // Kiểm tra trip tồn tại
       const trip = await this.tripService.findTripByID(tripId);
       if (!trip) {
         throw new BadRequestException(
-          'Chuyến đi không tồn tại trong hệ thống!!',
+          'Chuyến đi không tồn tại trong hệ thống!',
         );
       }
 
-      // validate seatCode phải >= 01 và <= totalSeat của vehicle
-      const numberSeatCode = parseInt(seatCode.slice(1), 10);
       const totalSeat = trip.vehicle.totalSeat;
-      if (numberSeatCode < 1 || numberSeatCode > totalSeat) {
-        throw new BadRequestException(
-          `Mã ghế ${seatCode} không hợp lệ. Vui lòng sử dụng mã ghế từ A01 đến A${totalSeat.toString().padStart(2, '0')}`,
+
+      // Kiểm tra ghế hợp lệ & đã được đặt chưa
+      for (const seat of seatCode) {
+        if (seat < 1 || seat > totalSeat) {
+          throw new BadRequestException(
+            `Mã ghế ${seat} không hợp lệ. Chỉ từ 1 đến ${totalSeat}`,
+          );
+        }
+
+        const existsSeat = await this.seatService.checkSeatExistsOnTrip(
+          seat,
+          tripId,
         );
+        if (existsSeat) {
+          throw new BadRequestException(
+            `Ghế ${seat} đã được đặt trong chuyến đi này!`,
+          );
+        }
       }
 
-      // Check trùng ghế trong trip
-      const existsSeatOnTrip = await this.seatService.checkSeatExistsOnTrip(
-        seatCode,
-        tripId,
-      );
-      if (existsSeatOnTrip) {
-        throw new BadRequestException(
-          `Ghế ${seatCode} đã được đặt trong chuyến đi ${tripId}!!`,
-        );
+      const createdTickets: any[] = [];
+      for (const seat of seatCode) {
+        // Tạo payment
+        const payment = queryRunner.manager.create(Payment, {
+          amount: trip.price * seatCode.length,
+          paymentTime: new Date(),
+          method: methodPayment,
+          status: statusPayment || PaymentStatus.PENDING,
+          user,
+        });
+        await queryRunner.manager.save(payment);
+
+        // Tạo seat
+        const newSeat = queryRunner.manager.create(Seat, {
+          seatCode: seat,
+          trip,
+          isBooked: true,
+        });
+        await queryRunner.manager.save(newSeat);
+
+        // Tạo ticket
+        const newTicket = queryRunner.manager.create(Ticket, {
+          trip,
+          seat: newSeat,
+          seatCode: seat,
+          status: 'UNPAID',
+          user,
+          payment,
+          ticketTime: new Date(),
+        });
+        await queryRunner.manager.save(newTicket);
+
+        createdTickets.push(newTicket);
       }
 
-      // tạo payment
-      const payment = querryRunner.manager.create(Payment, {
-        amount: trip.price,
-        paymentTime: new Date(),
-        method: methodPayment,
-        status: ticketData.statusPayment
-          ? ticketData.statusPayment
-          : PaymentStatus.PENDING,
-        user,
-      });
-      await querryRunner.manager.save(payment);
+      // Cập nhật số lượng ghế trống
+      trip.availabelSeat -= seatCode.length;
+      await queryRunner.manager.save(trip);
 
-      // Tạo seat
-      const newSeat = querryRunner.manager.create(Seat, {
-        seatCode,
-        trip,
-        isBooked: true,
-      });
-      await querryRunner.manager.save(newSeat);
-
-      // Tạo ticket
-      const newTicket = querryRunner.manager.create(Ticket, {
-        // ticketTime: new Date(),
-        // departLocation: departLocationDetail,
-        // arrivalLocation: arriveLocatioDetailn,
-        // trip,
-        // seat: newSeat,
-        // seatCode,
-        // status: 'UNPAID',
-        // user,
-        // payment,
-      });
-      await querryRunner.manager.save(newTicket);
-
-      // Cập nhật -1 ghế đã đặt trong trip
-      trip.availabelSeat -= 1;
-      await querryRunner.manager.save(trip);
-
-      await querryRunner.commitTransaction();
-      return newTicket;
+      await queryRunner.commitTransaction();
+      return {
+        message: 'Tạo vé thành công!',
+        tickets: createdTickets,
+      };
     } catch (error) {
-      await querryRunner.rollbackTransaction();
+      await queryRunner.rollbackTransaction();
       throw new BadRequestException(error.message || 'Lỗi khi tạo vé');
     } finally {
-      await querryRunner.release();
+      await queryRunner.release();
     }
   }
 

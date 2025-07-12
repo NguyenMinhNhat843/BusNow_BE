@@ -16,4 +16,13 @@ export class StopPointController {
   create(@Body() dto: CreateStopPointDto) {
     return this.stopPointService.createStopPoint(dto);
   }
+
+  @Get('/by-route/:routeId')
+  async getStopPointsByRoute(@Param('routeId') routeId: string) {
+    const data = await this.stopPointService.findStopPointsByRoute(routeId);
+    return {
+      status: 'success',
+      data,
+    };
+  }
 }

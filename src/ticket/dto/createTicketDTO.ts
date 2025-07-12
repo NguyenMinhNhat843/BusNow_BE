@@ -11,20 +11,10 @@ import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 
 export class CreateTIcketDTO {
   @IsString()
-  departLocationDetailId: string;
-
-  @IsString()
-  arriveLocationDetailId: string;
-
-  @IsString()
   tripId: string;
 
-  @IsString()
-  seatCode: string;
-
-  @IsString()
-  @IsOptional()
-  typeSeat?: string;
+  @IsArray()
+  seatCode: number[];
 
   @IsEnum(PaymentMethod, { message: 'Phương thức thanh toán không hợp lệ!' })
   methodPayment: string;

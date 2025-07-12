@@ -39,6 +39,7 @@ export class TripController {
       });
       return {
         tripId: trip.tripId,
+        routeId: trip.vehicle.route.routeId,
         price: trip.price,
         availableSeat: trip.availabelSeat,
         totalSeat: trip.vehicle?.totalSeat,
@@ -48,8 +49,8 @@ export class TripController {
         fromId: trip.vehicle.route.origin.locationId,
         fromname: trip.vehicle.route.origin.name,
         departTime: trip.departDate,
-        toId: trip.vehicle.route.origin.locationId,
-        toName: trip.vehicle.route.origin.name,
+        toId: trip.vehicle.route.destination.locationId,
+        toName: trip.vehicle.route.destination.name,
         arriveTime: arriveTime,
       };
     });
@@ -60,10 +61,19 @@ export class TripController {
     };
   }
 
+  @Get('vehicle')
+  async getTripsByVehicle(
+    @Param('vehicleId') vehicleId: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.tripService.findTripByVehicleId(vehicleId, +page, +limit);
+  }
+
   @Post('gen-trips')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER]))
-  async genTrips(@Query() data: GenTripDTO) {
-    const response = await this.tripService.genTrip(data);
+  async genTrips(@Body() data: GenTripDTO) {
+    const response = await this.tripService.genTrip(data); //asdsad
     return response;
   }
 

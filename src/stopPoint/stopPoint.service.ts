@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Like, Repository } from 'typeorm';
+import { DataSource, Like, Repository } from 'typeorm';
 import { StopPoint } from './stopPoint.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateStopPointDto } from './dto/createStopPointDTO';
@@ -24,6 +24,7 @@ export class StopPointService {
 
     @InjectRepository(Location)
     private cityRepo: Repository<Location>,
+    private dataSource: DataSource,
   ) {}
 
   async findLocationDetailByIdOrName(id?: string, name?: string) {
@@ -45,20 +46,42 @@ export class StopPointService {
     throw new BadRequestException('Phải cung cấp id hoặc name để tìm kiếm');
   }
 
+  async findStopPointsByRoute(routeId: string) {
+    const route = await this.dataSource
+      .getRepository(Route)
+      .createQueryBuilder('route')
+      .leftJoinAndSelect('route.stopPoints', 'stopPoint')
+      .leftJoinAndSelect('stopPoint.city', 'city')
+      .where('route.routeId = :routeId', { routeId })
+      .getOne();
+
+    if (!route) {
+      throw new NotFoundException('Không tìm thấy tuyến xe!');
+    }
+
+    return route.stopPoints.map((sp) => ({
+      id: sp.id,
+      name: sp.name,
+      address: sp.address,
+      city: {
+        id: sp.city?.locationId,
+        name: sp.city?.name,
+      },
+    }));
+  }
+
   // Lấy stopPoint theo Route, lấy hết - có phân trang, lấy stopPoint theo city
   // Lấy theo type: Pickup or dropoff
   // sort theo createdAt
   async searchStopPoint(options: SearchStopPointDto) {
-    const { routeId, cityId, type, page = 1, limit = 10 } = options;
+    const { cityId, page = 1, limit = 10 } = options;
 
-    const where: any = {};
-    if (routeId) where.route = { routeId };
-    if (cityId) where.city = { id: cityId };
-    if (type) where.type = type;
+    let where: any = {};
+    if (cityId) where = { cityId };
 
     const [data, total] = await this.stopPointRepo.findAndCount({
-      where,
-      relations: ['route', 'city'],
+      where: { cityId },
+      relations: ['city'],
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

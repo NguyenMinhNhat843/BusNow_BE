@@ -40,6 +40,7 @@ export class Ticket {
   seat: Seat;
 
   @OneToOne(() => Payment, (p) => p.ticket)
+  @JoinColumn({ name: 'paymentId' })
   payment: Payment;
 
   @CreateDateColumn()

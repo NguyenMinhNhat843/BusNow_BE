@@ -5,15 +5,7 @@ import { StopPointEnum } from 'src/enum/StopPointsEnum';
 export class SearchStopPointDto {
   @IsOptional()
   @IsString()
-  routeId?: string;
-
-  @IsOptional()
-  @IsString()
   cityId?: string;
-
-  @IsOptional()
-  @IsEnum(StopPointEnum)
-  type?: StopPointEnum;
 
   @IsOptional()
   @Type(() => Number)

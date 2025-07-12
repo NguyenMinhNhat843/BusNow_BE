@@ -36,7 +36,6 @@ export class Payment {
   status: string;
 
   @OneToOne(() => Ticket, (t) => t.payment)
-  @JoinColumn({ name: 'ticketId' })
   ticket: Ticket;
 
   @ManyToOne(() => User)
