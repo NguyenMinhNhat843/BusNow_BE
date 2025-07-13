@@ -3,7 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Between, Equal, ILike, MoreThanOrEqual, Repository } from 'typeorm';
+import {
+  Between,
+  Brackets,
+  Equal,
+  ILike,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
 import { Trip } from './trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createTripDTO } from './dto/createTripDTO';
@@ -38,7 +45,7 @@ export class TripService {
     return result;
   }
 
-  async findTripByVehicleId(vehicleId, page: number, limit: number) {
+  async findTripByVehicleId(vehicleId: string, page: number, limit: number) {
     const [trips, total] = await this.tripRepository.findAndCount({
       where: {
         vehicle: { vehicleId },
@@ -117,8 +124,17 @@ export class TripService {
       .leftJoinAndSelect('v.provider', 'provider')
       .leftJoinAndSelect('r.origin', 'o')
       .leftJoinAndSelect('r.destination', 'd')
-      .where('o.locationId = :from', { from: fromLocationId })
-      .andWhere('d.locationId = :to', { to: toLocationId })
+      .where(
+        new Brackets((qb) => {
+          qb.where(
+            `(o.locationId = :from AND d.locationId = :to AND trip.type = 'go')`,
+            { from: fromLocationId, to: toLocationId },
+          ).orWhere(
+            `(o.locationId = :to AND d.locationId = :from AND trip.type = 'return')`,
+            { to: toLocationId, from: fromLocationId },
+          );
+        }),
+      )
       .andWhere('trip.departDate BETWEEN :start AND :end', {
         start: startTime,
         end: endTime,
@@ -171,15 +187,6 @@ export class TripService {
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
-
-    // map field
-    // const trips = results.map((trip) => ({
-    //   tripId: trip.tripId,
-    //   price: trip.price,
-    //   avatarProvider: trip.vehicle.provider.avatar,
-    //   totalSeat: trip.vehicle.totalSeat,
-    //   route: trip.vehicle.route,
-    // }));
 
     return {
       status: 'success',
@@ -340,10 +347,10 @@ export class TripService {
       const fullDepartDate = new Date(
         `${format(curent, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
       );
-      console.log(
-        '[tripService] - [gen trip] - fullDepartDate: ',
-        fullDepartDate,
-      );
+      // console.log(
+      //   '[tripService] - [gen trip] - fullDepartDate: ',
+      //   fullDepartDate,
+      // );
 
       // 🔍 Kiểm tra nếu trip đã tồn tại (theo vehicle và departDate)
       const existed = await this.tripRepository.findOne({

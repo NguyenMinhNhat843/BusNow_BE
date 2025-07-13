@@ -52,6 +52,7 @@ export class TripController {
         toId: trip.vehicle.route.destination.locationId,
         toName: trip.vehicle.route.destination.name,
         arriveTime: arriveTime,
+        type: trip.type,
       };
     });
 
@@ -63,7 +64,7 @@ export class TripController {
 
   @Get('vehicle')
   async getTripsByVehicle(
-    @Param('vehicleId') vehicleId: string,
+    @Query('vehicleId') vehicleId: string,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
