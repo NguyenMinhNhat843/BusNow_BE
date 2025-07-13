@@ -216,4 +216,31 @@ export class TicketService {
       tickets: result,
     };
   }
+
+  async findTicketsByTrip(tripId: string) {
+    return this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.payment', 'payment')
+      .where('ticket.trip = :tripId', { tripId })
+      .select([
+        'ticket.ticketId',
+        'ticket.status',
+        'ticket.createdAt',
+        'user.userId',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+        'user.phoneNumber',
+        'seat.seatId',
+        'seat.seatCode',
+        'payment.paymentId',
+        'payment.amount',
+        'payment.paymentTime',
+        'payment.status',
+      ])
+      .orderBy('ticket.createdAt', 'DESC')
+      .getMany();
+  }
 }

@@ -5,9 +5,11 @@ export class GenTripDTO {
   @IsString()
   vehicleId: string;
 
-  @Type(() => Number)
-  @IsNumber()
-  time: number; // gen trước bao nhiêu ngày
+  @IsDateString()
+  startTime: Date;
+
+  @IsDateString()
+  endTime: Date;
 
   @Type(() => Number)
   @IsNumber()

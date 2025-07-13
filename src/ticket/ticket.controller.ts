@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Put,
   Req,
@@ -13,13 +14,14 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { User } from 'src/user/user.entity';
 import { RolesGuard } from 'src/user/guards/roles.guard';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
+import { RoleEnum } from 'src/common/enum/RoleEnum';
 
 @Controller('ticket')
 export class ticketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
   async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
     const user = (req as any).user as User;
     const result = await this.ticketService.createTicket(body, user);
@@ -50,5 +52,44 @@ export class ticketController {
   async filterTicket(@Body() body: FilterTicketDTO) {
     const response = await this.ticketService.filterTicketPagination(body);
     return response;
+  }
+
+  @Get('by-trip/:tripId')
+  @UseGuards(JwtAuthGuard, new RolesGuard(['provider']))
+  async getTicketsByTrip(@Param('tripId') tripId: string) {
+    const tickets = await this.ticketService.findTicketsByTrip(tripId);
+
+    const result = tickets.map((t) => {
+      const {
+        ticketId,
+        status,
+        createdAt,
+        user: { userId, firstName, lastName, email, phoneNumber } = {},
+        seat: { seatId, seatCode } = {},
+        payment: { paymentId, amount, paymentTime, status: paymentStatus } = {},
+      } = t;
+
+      return {
+        ticketId,
+        status,
+        createdAt,
+        userId,
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        seatId,
+        seatCode,
+        paymentId,
+        amount,
+        paymentTime,
+        paymentStatus,
+      };
+    });
+
+    return {
+      status: 'success',
+      data: result,
+    };
   }
 }

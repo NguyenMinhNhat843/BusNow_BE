@@ -95,25 +95,19 @@ export class TripService {
       );
     }
 
+    // Vì trong pg đang là giờ UTC nên sẽ lấy giwof UTC só sánh
+    const startTime = new Date(departTime);
+    const endTime = new Date(departTime);
+    endTime.setHours(23, 59, 59, 99);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     // kiểm tra departTime > now
-    if (new Date(departTime) < new Date()) {
+    if (startTime < now) {
       throw new BadRequestException(
         'Thời gian khởi hành phải lớn hơn thời gian hiện tại!!',
       );
     }
-
-    // Múi giờ của hệ thống backend/PostgreSQL
-    const vnZone = 'Asia/Ho_Chi_Minh';
-
-    // Chuyển departTime (string 'yyyy-MM-dd') thành khoảng ngày ở VN
-    const startTimeVN = DateTime.fromISO(departTime, { zone: vnZone }).startOf(
-      'day',
-    );
-    const endTimeVN = startTimeVN.plus({ days: 1 });
-
-    // Convert về UTC để so sánh đúng với dữ liệu trong DB
-    const startTimeUTC = startTimeVN.toUTC().toJSDate();
-    const endTimeUTC = endTimeVN.toUTC().toJSDate();
 
     // query trips
     const query = this.tripRepository
@@ -126,8 +120,8 @@ export class TripService {
       .where('o.locationId = :from', { from: fromLocationId })
       .andWhere('d.locationId = :to', { to: toLocationId })
       .andWhere('trip.departDate BETWEEN :start AND :end', {
-        start: startTimeVN,
-        end: endTimeVN,
+        start: startTime,
+        end: endTime,
       });
 
     // Lọc theo tên nhà xe
@@ -331,15 +325,24 @@ export class TripService {
     const returnTrips: Trip[] = [];
 
     // Lấy ngày hiện tại làm gốc
-    const today = new Date();
-    const totalCycles = Math.floor(data.time / repeatsDay);
-    for (let i = 0; i < totalCycles; ++i) {
-      // Tính ngày khởi hành cho từng trip - cái này là chuyến đi
-      const departDay = addDays(today, i * repeatsDay);
+    const startTime = new Date(data.startTime);
+    const endTime = new Date(data.endTime);
+    if (startTime > endTime) {
+      throw new BadRequestException('THời gian end phải lớn hơn start');
+    }
 
+    for (
+      let curent = new Date(startTime);
+      curent <= endTime;
+      curent = addDays(curent, repeatsDay)
+    ) {
       // Gộp ngày (ở trên) với giờ (cố định trong vehicle)
       const fullDepartDate = new Date(
-        `${format(departDay, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
+        `${format(curent, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
+      );
+      console.log(
+        '[tripService] - [gen trip] - fullDepartDate: ',
+        fullDepartDate,
       );
 
       // 🔍 Kiểm tra nếu trip đã tồn tại (theo vehicle và departDate)
@@ -359,7 +362,6 @@ export class TripService {
         vehicle,
         departDate: fullDepartDate.toISOString(),
       });
-
       createdTrips.push(trip);
 
       // ============== Tạo tiếp trip chiều về ===================

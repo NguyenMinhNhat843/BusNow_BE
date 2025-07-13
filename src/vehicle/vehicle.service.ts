@@ -52,9 +52,24 @@ export class VehicleService {
       where: {
         routeId: routeId,
       },
+      relations: ['origin', 'destination'],
     });
+    // console.log('[vehicleService] - [route]: ', route);
     if (!route) {
       throw new NotFoundException('Tuyến đường này không tồn tại!!!');
+    }
+
+    // Kiểm tra đã có chuyến khác đi với route và giờ này chưa
+    const vehicleExistsByTime = await this.vehicleRepository.findOne({
+      where: {
+        route: { routeId: routeId },
+        departHour,
+      },
+    });
+    if (vehicleExistsByTime) {
+      throw new BadRequestException(
+        `Đã có xe ${vehicleExistsByTime.code} chạy tuyến ${route.origin.name} - ${route.destination.name} lúc ${departHour} rồi. Bạn có thể Giảm thời gian xuống 5 10 phút để tránh kẹt xe`,
+      );
     }
 
     // Kiểm tra providerId có tồn tại không
