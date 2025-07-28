@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,18 +17,49 @@ import { User } from 'src/user/user.entity';
 import { RolesGuard } from 'src/user/guards/roles.guard';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
+import { UserService } from 'src/user/user.service';
 
 @Controller('ticket')
 export class ticketController {
-  constructor(private readonly ticketService: TicketService) {}
+  constructor(
+    private readonly ticketService: TicketService,
+    private userService: UserService,
+  ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
+  // @UseGuards(new RolesGuard([RoleEnum.USER, RoleEnum.GUEST]))
   async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
-    const user = (req as any).user as User;
-    const result = await this.ticketService.createTicket(body, user);
+    const user = ((req as any).user as User) || null;
 
-    return result;
+    if (user === null) {
+      if (body.phone) {
+        const guest = await this.userService.findUserByPhoneNumber(body.phone);
+        if (!guest) {
+          // Tạo 1 guest
+          const res = await this.userService.createGuest(
+            body.firstName || '',
+            body.lastName || '',
+            body.email || '',
+            body.phone,
+          );
+          const result = await this.ticketService.createTicket(body, res);
+          return result;
+        } else {
+          const result = await this.ticketService.createTicket(body, guest);
+          return result;
+        }
+      } else {
+        throw new BadRequestException(
+          'Có vẻ bạn chưa đăng nhập, vui lòng nhập phone để đặt vé',
+        );
+      }
+      // đặt vé với guest
+    } else if (user.role === RoleEnum.USER) {
+      const result = await this.ticketService.createTicket(body, user);
+      return result;
+    } else {
+      throw new BadRequestException('User hoặc Guest mới được đặt vé');
+    }
   }
 
   @Put('cancle-ticket')
@@ -91,5 +124,36 @@ export class ticketController {
       status: 'success',
       data: result,
     };
+  }
+  @Get('by-phone/:phone')
+  async findTicketByPhone(@Param('phone') phone: string) {
+    const tickets = await this.ticketService.findTicketByPhone(phone);
+
+    const flattened = tickets.map((ticket) => ({
+      ticketId: ticket.ticketId,
+      status: ticket.status,
+      phoneNumber: ticket.user.phoneNumber,
+      fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+      email: ticket.user.email,
+
+      seatCode: ticket.seat.seatCode,
+
+      price: ticket.trip.price,
+      departDate: ticket.trip.departDate,
+      tripStatus: ticket.trip.tripStatus,
+      tripType: ticket.trip.type,
+
+      vehicleCode: ticket.trip.vehicle.code,
+      vehicleType: ticket.trip.vehicle.busType,
+
+      origin: ticket.trip.vehicle.route.origin.name,
+      destination: ticket.trip.vehicle.route.destination.name,
+
+      paymentMethod: ticket.payment?.method,
+      paymentStatus: ticket.payment?.status,
+      paymentTime: ticket.payment?.paymentTime,
+    }));
+
+    return flattened;
   }
 }

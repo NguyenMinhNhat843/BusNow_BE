@@ -2,6 +2,7 @@ import {
   ArrayNotEmpty,
   ArrayUnique,
   IsArray,
+  IsEmail,
   IsEnum,
   IsOptional,
   IsString,
@@ -22,4 +23,21 @@ export class CreateTIcketDTO {
   @IsEnum(PaymentStatus, { message: 'Trạng thái thanh toán không hợp lệ!' })
   @IsOptional()
   statusPayment?: string;
+
+  // Trong trường hợp guest
+  @IsString()
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @IsOptional()
+  lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
 }

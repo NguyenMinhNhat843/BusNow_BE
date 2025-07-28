@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { CreateUserByGoogleDTO } from './dto/createUserByGoogleDTO';
 import { updateProfileDTO } from './dto/updateProfileDTO';
 import { S3Service } from 'src/s3/s3.service';
+import { RoleEnum } from 'src/common/enum/RoleEnum';
 
 @Injectable()
 export class UserService {
@@ -13,6 +14,22 @@ export class UserService {
     private userRepo: Repository<User>,
     private s3Service: S3Service,
   ) {}
+
+  async createGuest(
+    firstName: string,
+    lastName: string,
+    email: string,
+    phoneNumber: string,
+  ) {
+    const user = this.userRepo.create({
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      role: RoleEnum.GUEST,
+    });
+    return await this.userRepo.save(user);
+  }
 
   async findOrcreateUserByGoogle(data: CreateUserByGoogleDTO) {
     let user = await this.userRepo.findOneBy({ email: data.email });

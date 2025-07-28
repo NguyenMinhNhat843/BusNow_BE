@@ -52,17 +52,35 @@ export class AuthService {
       }
     }
 
+    // hash password
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+
     // kiểm tra tồn tại user
     const existsUser = await this.userRepo.findOneBy({ email: data.email });
-    if (existsUser) {
-      throw new BadRequestException('Email đã được đăng ký!!!');
-    }
-
-    const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = this.userRepo.create({
       ...data,
       password: hashedPassword,
     });
+    if (existsUser) {
+      // Kiểm tra có phải guest không
+      const isGuest = existsUser.role === RoleEnum.GUEST;
+      if (isGuest) {
+        const { isInternalAdminCreate, otp, ...userData } = data;
+        const res = await this.userRepo.update(
+          {
+            email: data.email,
+          },
+          {
+            ...userData,
+            password: hashedPassword,
+          },
+        );
+        return existsUser;
+      } else {
+        throw new BadRequestException('Email đã được đăng ký!!!');
+      }
+    }
+
     return this.userRepo.save(user);
   }
 

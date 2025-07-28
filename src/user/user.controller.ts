@@ -27,6 +27,24 @@ export class UserController {
     private readonly s3Service: S3Service,
   ) {}
 
+  @Post('/create-guest')
+  async createGuest(
+    @Body()
+    body: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      phoneNumber: string;
+    },
+  ) {
+    return await this.userService.createGuest(
+      body.firstName,
+      body.lastName,
+      body.email,
+      body.phoneNumber,
+    );
+  }
+
   @UseGuards(new RolesGuard(['admin']))
   @Get('getUserLimit')
   async getUserLimit(@Body('start') start: number, @Body('end') end: number) {

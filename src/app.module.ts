@@ -13,6 +13,7 @@ import { TicketModule } from './ticket/ticket.module';
 import { PaymentModue } from './payment/payment.module';
 import { ProviderModule } from './provider/provider.module';
 import { RouteModule } from './route/route.module';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { RouteModule } from './route/route.module';
     TicketModule,
     PaymentModue,
     S3Module,
+    ApplicationModule,
   ],
   controllers: [],
   providers: [],

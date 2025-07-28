@@ -65,7 +65,7 @@ export class TicketService {
       for (const seat of seatCode) {
         // Tạo payment
         const payment = queryRunner.manager.create(Payment, {
-          amount: trip.price * seatCode.length,
+          amount: trip.price,
           paymentTime: new Date(),
           method: methodPayment,
           status: statusPayment || PaymentStatus.PENDING,
@@ -242,5 +242,52 @@ export class TicketService {
       ])
       .orderBy('ticket.createdAt', 'DESC')
       .getMany();
+  }
+
+  async findTicketByPhone(phone: string) {
+    // find() method chỉ chỉ định field của entity gốc (Ticket), muốn lấy cái khác phải dùng quẻyBuilder
+    const response = await this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.trip', 'trip')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.payment', 'payment')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('route.origin', 'origin')
+      .leftJoinAndSelect('route.destination', 'destination')
+      .where('user.phoneNumber = :phone', { phone: phone })
+      .select([
+        'ticket.ticketId',
+        'ticket.status',
+        'user.userId',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+        'user.phoneNumber',
+        'user.role',
+        'trip.tripId',
+        'trip.price',
+        'trip.departDate',
+        'trip.type',
+        'trip.tripStatus',
+        'seat.seatId',
+        'seat.seatCode',
+        'payment.paymentId',
+        'payment.paymentTime',
+        'payment.method',
+        'payment.status',
+        'vehicle.vehicleId',
+        'vehicle.code',
+        'vehicle.busType',
+        'route.routeId',
+        'origin.locationId',
+        'origin.name',
+        'destination.locationId',
+        'destination.name',
+      ])
+      .getMany();
+    // tên, phone, email, route: from - to, departTime, seat, paymentTIme, price, status
+    return response;
   }
 }

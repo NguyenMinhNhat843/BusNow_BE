@@ -45,8 +45,8 @@ export class TripService {
     return result;
   }
 
-  async findTripByVehicleId(vehicleId: string, page: number, limit: number) {
-    const [trips, total] = await this.tripRepository.findAndCount({
+  async findTripByVehicleId(vehicleId: string, page?: number, limit?: number) {
+    const options: any = {
       where: {
         vehicle: { vehicleId },
       },
@@ -54,18 +54,26 @@ export class TripService {
       order: {
         departDate: 'ASC',
       },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    };
+
+    if (page && limit) {
+      options.skip = (page - 1) * limit;
+      options.take = limit;
+    }
+
+    const [trips, total] = await this.tripRepository.findAndCount(options);
 
     return {
       status: 'success',
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPage: Math.ceil(total / limit),
-      },
+      pagination:
+        page && limit
+          ? {
+              page,
+              limit,
+              total,
+              totalPage: Math.ceil(total / limit),
+            }
+          : null,
       trips,
     };
   }

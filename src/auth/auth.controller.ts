@@ -28,7 +28,11 @@ export class AuthController {
     // check email đã được đăng ký hay chưa
     const isExistsUser = await this.authService.findUserByEmail(body.email);
     if (isExistsUser) {
-      throw new BadRequestException('Email đã được đăng ký!!!');
+      // Kiểm tra phải guest ko
+      const isGuest = isExistsUser.role === RoleEnum.GUEST;
+      if (!isGuest) {
+        throw new BadRequestException('Email đã được đăng ký!!!');
+      }
     }
 
     const otp = this.authService.generrateOtp();

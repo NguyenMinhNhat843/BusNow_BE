@@ -19,10 +19,15 @@ import { RolesGuard } from 'src/user/guards/roles.guard';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { GenTripDTO } from './dto/genTripDTO';
 import { DeleteTripDTO } from './dto/deleteTripDTO';
+import { DeleteTripBeforeDate } from './dto/deleteTripBeforeDate.dto';
+import { TripBussinessService } from './tripBussiness.service';
 
 @Controller('trip')
 export class TripController {
-  constructor(private readonly tripService: TripService) {}
+  constructor(
+    private readonly tripService: TripService,
+    private tripBussinessService: TripBussinessService,
+  ) {}
 
   @Post('create')
   async createTrip(@Body() data: createTripDTO) {
@@ -83,6 +88,19 @@ export class TripController {
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER]))
   async deleteTrips(@Body() deleteTripDto: DeleteTripDTO) {
     const result = await this.tripService.deleteTrip(deleteTripDto);
+    return result;
+  }
+
+  @Delete('/delete-trips-before-date')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER]))
+  async deleteTripsBeforeDate(@Body() data: DeleteTripBeforeDate) {
+    // Nếu không có date thì mặc định là now
+    const date = data.date || new Date().toISOString();
+    const result = await this.tripBussinessService.deleteTripsBeforeDate({
+      ...data,
+      date,
+    });
     return result;
   }
 }
