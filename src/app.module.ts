@@ -16,7 +16,7 @@ import { RouteModule } from './route/route.module';
 import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
-
+console.log(process.env.DATABASE_URL);
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -39,6 +39,9 @@ import { CancellationRequest } from './cancellationRequest/cancellationRequest.e
         url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
         autoLoadEntities: true,
         synchronize: false, // Đừng bật ở production nếu đã deploy dữ liệu
+        ssl: {
+          rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
+        },
       }),
     }),
     AuthModule,
