@@ -21,7 +21,7 @@ import { CancellationRequest } from './cancellationRequest/cancellationRequest.e
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // Để biến môi trường có thể sử dụng toàn cục
-      envFilePath: '.env', // Đường dẫn đến file .env
+      envFilePath: process.env.NODE_ENV === 'development' ? '.env' : undefined,
     }),
     // TypeOrmModule.forRoot({
     //   type: 'postgres',
