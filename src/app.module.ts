@@ -15,6 +15,7 @@ import { ProviderModule } from './provider/provider.module';
 import { RouteModule } from './route/route.module';
 import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
+import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { MailModule } from './mail/mail.module';
     S3Module,
     ApplicationModule,
     MailModule,
+    CancellationRequest,
   ],
   controllers: [],
   providers: [],

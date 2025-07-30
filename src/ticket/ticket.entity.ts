@@ -14,6 +14,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CancellationRequest } from 'src/cancellationRequest/cancellationRequest.entity';
 
 @Entity()
 export class Ticket {
@@ -42,6 +43,9 @@ export class Ticket {
   @OneToOne(() => Payment, (p) => p.ticket)
   @JoinColumn({ name: 'paymentId' })
   payment: Payment;
+
+  @OneToOne(() => CancellationRequest)
+  cancellationRequest: CancellationRequest;
 
   @CreateDateColumn()
   createdAt: Date;

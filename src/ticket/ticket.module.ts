@@ -9,10 +9,11 @@ import { ticketController } from './ticket.controller';
 import { StopPointModule } from 'src/stopPoint/stopPoint.module';
 import { UserModule } from 'src/user/user.module';
 import { MailModule } from 'src/mail/mail.module';
+import { CancellationRequest } from 'src/cancellationRequest/cancellationRequest.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Ticket]),
+    TypeOrmModule.forFeature([Ticket, CancellationRequest]),
     StopPointModule,
     TripModule,
     SeatModule,

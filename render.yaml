@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: busnow-api
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    rootDir: ./
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: my-postgres
+          property: connectionString
+
+databases:
+  - name: busnow-postgres
+    plan: free
