@@ -23,15 +23,23 @@ import { CancellationRequest } from './cancellationRequest/cancellationRequest.e
       isGlobal: true, // Để biến môi trường có thể sử dụng toàn cục
       envFilePath: '.env', // Đường dẫn đến file .env
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: 5432,
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '123456789',
-      database: process.env.DB_NAME || 'BusNow',
-      autoLoadEntities: true,
-      synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
+    // TypeOrmModule.forRoot({
+    //   type: 'postgres',
+    //   host: process.env.DB_HOST || 'localhost',
+    //   port: 5432,
+    //   username: process.env.DB_USERNAME || 'postgres',
+    //   password: process.env.DB_PASSWORD || '123456789',
+    //   database: process.env.DB_NAME || 'BusNow',
+    //   autoLoadEntities: true,
+    //   synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
+    // }),
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'postgres',
+        url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
+        autoLoadEntities: true,
+        synchronize: false, // Đừng bật ở production nếu đã deploy dữ liệu
+      }),
     }),
     AuthModule,
     UserModule,
