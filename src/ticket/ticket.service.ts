@@ -13,6 +13,9 @@ import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { SortTicketEnum } from 'src/common/enum/sortTicketEnum';
+import { SendTicketEmailDTO } from 'src/mail/dto/sendTicketEmail.dto';
+import { MailModule } from 'src/mail/mail.module';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class TicketService {
@@ -23,6 +26,7 @@ export class TicketService {
     private readonly tripService: TripService,
     private readonly seatService: SeatService,
     private dataSource: DataSource,
+    private mailService: MailService,
   ) {}
 
   async createTicket(ticketData: CreateTIcketDTO, user: User) {
@@ -101,16 +105,57 @@ export class TicketService {
       await queryRunner.manager.save(trip);
 
       await queryRunner.commitTransaction();
+
+      console.log('asdasdasdasdasdasdsad');
+      // Guiwr mail
+      for (const t of createdTickets) {
+        const ticket = await this.findTicket(t.ticketId as string);
+        console.log(ticket);
+        if (!ticket) {
+          throw new BadRequestException('Có lỗi j đó');
+        }
+
+        const emailData: SendTicketEmailDTO = {
+          fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+          busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
+          busCode: ticket.trip.vehicle.code,
+          departDate: ticket.trip.departDate.toISOString(),
+          price: ticket.trip.price,
+          seatCode: ticket.seat.seatCode,
+          origin: ticket.trip.vehicle.route.origin.name,
+          destination: ticket.trip.vehicle.route.destination.name,
+        };
+        await this.mailService.sendTicketEmail(user.email, emailData);
+      }
+
       return {
         message: 'Tạo vé thành công!',
         tickets: createdTickets,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      console.log(error);
       throw new BadRequestException(error.message || 'Lỗi khi tạo vé');
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async findTicket(ticketId: string) {
+    const result = await this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.trip', 'trip')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.payment', 'payment')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('route.origin', 'origin')
+      .leftJoinAndSelect('route.destination', 'destination')
+      .leftJoinAndSelect('vehicle.provider', 'provider')
+      .where('ticket.ticketId = :ticketId', { ticketId })
+      .getOne();
+    return result;
   }
 
   async cancleTicket(ticketId: string, userId: string) {
@@ -254,6 +299,7 @@ export class TicketService {
       .leftJoinAndSelect('ticket.payment', 'payment')
       .leftJoinAndSelect('trip.vehicle', 'vehicle')
       .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('vehicle.provider', 'provider')
       .leftJoinAndSelect('route.origin', 'origin')
       .leftJoinAndSelect('route.destination', 'destination')
       .where('user.phoneNumber = :phone', { phone: phone })
@@ -285,9 +331,27 @@ export class TicketService {
         'origin.name',
         'destination.locationId',
         'destination.name',
+        'provider.firstName',
+        'provider.lastName',
+        'provider.userId',
       ])
       .getMany();
     // tên, phone, email, route: from - to, departTime, seat, paymentTIme, price, status
-    return response;
+    if (!response.length) {
+      return { user: null, tickets: [] };
+    }
+
+    const user = {
+      userId: response[0].user.userId,
+      fullName: response[0].user.firstName + ' ' + response[0].user.lastName,
+      email: response[0].user.email,
+      phoneNumber: response[0].user.phoneNumber,
+      role: response[0].user.role,
+    };
+
+    return {
+      user,
+      tickets: response,
+    };
   }
 }

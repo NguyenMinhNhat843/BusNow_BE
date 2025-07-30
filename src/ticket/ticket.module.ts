@@ -8,6 +8,7 @@ import { VehicleModule } from 'src/vehicle/vehicle.module';
 import { ticketController } from './ticket.controller';
 import { StopPointModule } from 'src/stopPoint/stopPoint.module';
 import { UserModule } from 'src/user/user.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserModule } from 'src/user/user.module';
     SeatModule,
     VehicleModule,
     UserModule,
+    MailModule,
   ],
   controllers: [ticketController],
   providers: [TicketService],

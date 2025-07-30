@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { SortByEnum } from 'src/common/enum/SortByEnum';
 import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
+import { BusTypeEnum } from 'src/enum/BusTypeEnum';
 
 export class SearchTripDTO {
   @IsString({ message: 'điểm đón phải là chuỗi' })
@@ -22,7 +23,7 @@ export class SearchTripDTO {
     {},
     { message: 'Thời gian khởi hành phải là định dạng ngày hợp lệ' },
   )
-  departTime: Date;
+  departTime: string;
 
   // phân trang
   @Transform(({ value }) => parseInt(value as string, 10))
@@ -32,16 +33,8 @@ export class SearchTripDTO {
   @IsNumber({}, { message: 'Số lượng chuyến đi mỗi trang phải là số' })
   limit: number;
 
-  // lọc
   @IsArray()
-  @IsOptional()
-  @IsString({ each: true, message: 'Tên nhà cung cấp phải là chuỗi' })
-  @Transform(
-    ({ value }) => (Array.isArray(value) ? value : [value]) as string[],
-  )
-  providerName?: string[];
-  @IsArray()
-  @IsEnum(VehicleTypeBus, {
+  @IsEnum(BusTypeEnum, {
     each: true,
     message: 'Loại phương tiện không hợp lệ',
   })
@@ -49,11 +42,13 @@ export class SearchTripDTO {
   @Transform(
     ({ value }) => (Array.isArray(value) ? value : [value]) as string[],
   )
-  vehicleSubType?: string[];
+  busType?: string[];
+
   @Transform(({ value }) => parseInt(value as string, 10))
   @IsNumber({}, { message: 'Giá tối thiểu phải là số' })
   @IsOptional()
   minPrice?: number;
+
   @Transform(({ value }) => parseInt(value as string, 10))
   @IsNumber({}, { message: 'Giá tối đa phải là số' })
   @IsOptional()

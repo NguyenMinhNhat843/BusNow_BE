@@ -35,22 +35,49 @@ export class ticketController {
       if (body.phone) {
         const guest = await this.userService.findUserByPhoneNumber(body.phone);
         if (!guest) {
+          // check tồn tại thông tin
+          if (!body.firstName) {
+            throw new BadRequestException('Phải có firstName');
+          }
+          if (!body.lastName) {
+            throw new BadRequestException('Phải có lastName');
+          }
+          if (!body.email) {
+            throw new BadRequestException('Phải có email');
+          }
           // Tạo 1 guest
           const res = await this.userService.createGuest(
-            body.firstName || '',
-            body.lastName || '',
-            body.email || '',
+            body.firstName,
+            body.lastName,
+            body.email,
             body.phone,
           );
           const result = await this.ticketService.createTicket(body, res);
           return result;
         } else {
-          const result = await this.ticketService.createTicket(body, guest);
-          return result;
+          // Kiểm tra role có phải guest ko
+          if (guest.role === RoleEnum.GUEST) {
+            // update lại thông tin
+            await this.userService.updateProfile(
+              {
+                firstName: body.firstName,
+                lastName: body.lastName,
+              },
+              guest.email,
+            );
+
+            // Tạo vé
+            const result = await this.ticketService.createTicket(body, guest);
+            return result;
+          } else {
+            throw new BadRequestException(
+              'Số điện thoại đã được đăng ký tìa khoản, vui lòng đăng nhập để thao tác!!!',
+            );
+          }
         }
       } else {
         throw new BadRequestException(
-          'Có vẻ bạn chưa đăng nhập, vui lòng nhập phone để đặt vé',
+          'Bạn đang là guest, vui lòng nhập phone để đặt vé',
         );
       }
       // đặt vé với guest
@@ -88,7 +115,6 @@ export class ticketController {
   }
 
   @Get('by-trip/:tripId')
-  @UseGuards(JwtAuthGuard, new RolesGuard(['provider']))
   async getTicketsByTrip(@Param('tripId') tripId: string) {
     const tickets = await this.ticketService.findTicketsByTrip(tripId);
 
@@ -127,15 +153,13 @@ export class ticketController {
   }
   @Get('by-phone/:phone')
   async findTicketByPhone(@Param('phone') phone: string) {
-    const tickets = await this.ticketService.findTicketByPhone(phone);
+    const result = await this.ticketService.findTicketByPhone(phone);
 
-    const flattened = tickets.map((ticket) => ({
+    const flattened = result.tickets.map((ticket) => ({
       ticketId: ticket.ticketId,
+      providerId: ticket.trip.vehicle.provider.userId,
+      providerName: ticket.trip.vehicle.provider.lastName,
       status: ticket.status,
-      phoneNumber: ticket.user.phoneNumber,
-      fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
-      email: ticket.user.email,
-
       seatCode: ticket.seat.seatCode,
 
       price: ticket.trip.price,
@@ -154,6 +178,12 @@ export class ticketController {
       paymentTime: ticket.payment?.paymentTime,
     }));
 
-    return flattened;
+    return {
+      status: 'success',
+      data: {
+        user: result.user,
+        tickets: flattened,
+      },
+    };
   }
 }

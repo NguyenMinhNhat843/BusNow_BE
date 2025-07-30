@@ -86,8 +86,7 @@ export class TripService {
       departTime,
       page,
       limit,
-      providerName,
-      vehicleSubType,
+      busType,
       minPrice,
       maxPrice,
       sortBy,
@@ -148,17 +147,10 @@ export class TripService {
         end: endTime,
       });
 
-    // Lọc theo tên nhà xe
-    if (providerName?.length) {
-      query.andWhere('provider.name ILIKE ANY(:providerName)', {
-        providerName: providerName.map((name) => `%${name}%`),
-      });
-    }
-
     // Lọc theo loại xe - VIP/STANDARD/LIMOUSE
-    if (vehicleSubType?.length) {
-      query.andWhere('v.subType IN (:...vehicleSubType)', {
-        vehicleSubType,
+    if (busType?.length) {
+      query.andWhere('v.busType IN (:...busType)', {
+        busType,
       });
     }
 
