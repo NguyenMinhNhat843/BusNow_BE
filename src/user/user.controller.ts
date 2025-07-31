@@ -67,6 +67,7 @@ export class UserController {
   }
 
   @Get('getProfileMe')
+  @UseGuards(JwtAuthGuard)
   async getProfile(@Req() req: any) {
     const user = await this.userService.findUserByEmail(
       req.user.email as string,
@@ -78,6 +79,7 @@ export class UserController {
   }
 
   @Put('updateProfile')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
   async updateProfile(
     @Body() body: updateProfileDTO,

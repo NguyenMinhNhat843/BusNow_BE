@@ -105,7 +105,7 @@ export class AuthService {
   // login
   async login(data: LoginDTO) {
     const existsUser = await this.userRepo.findOneBy({ email: data.email });
-    if (!existsUser) {
+    if (!existsUser || existsUser.role === RoleEnum.GUEST) {
       throw new BadRequestException('Email chưa được đăng ký!!!');
     }
 
@@ -120,6 +120,7 @@ export class AuthService {
     const payload = {
       id: existsUser.userId,
       email: existsUser.email,
+      phoneNumber: existsUser.phoneNumber,
       role: existsUser.role,
     };
 
@@ -222,5 +223,10 @@ export class AuthService {
       this.otpStore.delete(toEmail); // Xóa OTP sau khi xác thực thành công
     }
     return isValid;
+  }
+
+  // Generate token with payload
+  generateTokenJwt(payload: any) {
+    return this.jwtService.sign(payload);
   }
 }

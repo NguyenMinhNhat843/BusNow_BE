@@ -23,27 +23,27 @@ console.log(process.env.DATABASE_URL);
       isGlobal: true, // Để biến môi trường có thể sử dụng toàn cục
       envFilePath: process.env.NODE_ENV === 'development' ? '.env' : undefined,
     }),
-    // TypeOrmModule.forRoot({
-    //   type: 'postgres',
-    //   host: process.env.DB_HOST || 'localhost',
-    //   port: 5432,
-    //   username: process.env.DB_USERNAME || 'postgres',
-    //   password: process.env.DB_PASSWORD || '123456789',
-    //   database: process.env.DB_NAME || 'BusNow',
-    //   autoLoadEntities: true,
-    //   synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
-    // }),
-    TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'postgres',
-        url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
-        autoLoadEntities: true,
-        synchronize: false, // Đừng bật ở production nếu đã deploy dữ liệu
-        ssl: {
-          rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
-        },
-      }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: 5432,
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || '123456789',
+      database: process.env.DB_NAME || 'BusNow',
+      autoLoadEntities: true,
+      synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
     }),
+    // TypeOrmModule.forRootAsync({
+    //   useFactory: () => ({
+    //     type: 'postgres',
+    //     url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
+    //     autoLoadEntities: true,
+    //     synchronize: true, // Đừng bật ở production nếu đã deploy dữ liệu
+    //     ssl: {
+    //       rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
+    //     },
+    //   }),
+    // }),
     AuthModule,
     UserModule,
     ProviderModule,

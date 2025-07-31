@@ -18,6 +18,7 @@ import { changePasswordDTO } from './dto/changePasswordDTO';
 import { Response } from 'express';
 import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Controller('auth')
 export class AuthController {
@@ -145,10 +146,23 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  googleAuthCallback(@Req() req) {
-    return {
-      message: 'Đăng nhập thành công với Google!',
-      user: req.user, // user được gắn vào request bởi GoogleStrategy
-    };
+  googleAuthCallback(@Req() req: Request & JwtPayload, @Res() res: Response) {
+    const user = req.user;
+    const token = this.authService.generateTokenJwt({
+      email: user.email,
+      role: user.role,
+      userId: user.userId,
+    });
+
+    // Lưu token vô httponly cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // hoặc 'strict' nếu cần chặt chẽ hơn
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
+
+    const redirectUrl = `${process.env.URL_FE}/login-success`;
+    return res.redirect(redirectUrl);
   }
 }

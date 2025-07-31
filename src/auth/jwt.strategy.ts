@@ -27,6 +27,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   validate(payload: any) {
     // payload sẽ chứa thông tin người dùng đã được mã hóa trong JWT
-    return { userId: payload.id, email: payload.email, role: payload.role };
+    return {
+      userId: payload.id,
+      email: payload.email,
+      phoneNumber: payload.phoneNumber,
+      role: payload.role,
+    };
   }
 }

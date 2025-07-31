@@ -18,6 +18,7 @@ import { RolesGuard } from 'src/user/guards/roles.guard';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { UserService } from 'src/user/user.service';
+import { JwtPayload } from 'src/interface/JwtPayload';
 
 @Controller('ticket')
 export class ticketController {
@@ -97,13 +98,39 @@ export class ticketController {
   }
 
   @Get('my-ticket')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
   async getMyTicket(@Req() req: any) {
-    const userId = req.userId as string;
-    const response = await this.ticketService.getListTicketByUserId(userId);
+    const phoneNumber = req.user.phoneNumber as string;
+    const result = await this.ticketService.findTicketByPhone(phoneNumber);
+    const flattened = result.tickets.map((ticket) => ({
+      ticketId: ticket.ticketId,
+      providerId: ticket.trip.vehicle.provider.userId,
+      providerName: ticket.trip.vehicle.provider.lastName,
+      status: ticket.status,
+      seatCode: ticket.seat.seatCode,
+
+      price: ticket.trip.price,
+      departDate: ticket.trip.departDate,
+      tripStatus: ticket.trip.tripStatus,
+      tripType: ticket.trip.type,
+
+      vehicleCode: ticket.trip.vehicle.code,
+      vehicleType: ticket.trip.vehicle.busType,
+
+      origin: ticket.trip.vehicle.route.origin.name,
+      destination: ticket.trip.vehicle.route.destination.name,
+
+      paymentMethod: ticket.payment?.method,
+      paymentStatus: ticket.payment?.status,
+      paymentTime: ticket.payment?.paymentTime,
+    }));
+
     return {
       status: 'success',
-      data: response,
+      data: {
+        user: result.user,
+        tickets: flattened,
+      },
     };
   }
 

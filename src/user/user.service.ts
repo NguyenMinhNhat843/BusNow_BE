@@ -139,6 +139,9 @@ export class UserService {
     user.avatar = avatarUrl || user.avatar;
 
     await this.userRepo.save(user);
-    return { message: 'Cập nhật thông tin người dùng thành công' };
+    return {
+      status: 'success',
+      message: 'Cập nhật thông tin người dùng thành công',
+    };
   }
 }
