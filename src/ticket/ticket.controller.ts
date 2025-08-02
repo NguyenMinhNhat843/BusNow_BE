@@ -19,6 +19,7 @@ import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { UserService } from 'src/user/user.service';
 import { JwtPayload } from 'src/interface/JwtPayload';
+import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 
 @Controller('ticket')
 export class ticketController {
@@ -90,11 +91,35 @@ export class ticketController {
     }
   }
 
-  @Put('cancle-ticket')
-  @UseGuards(JwtAuthGuard)
-  async cancleTicket(@Body() body: { ticketId: string }, @Req() req: any) {
+  @Put('send-mail-cancle-ticket')
+  async cancleTicket(
+    @Body() body: { ticketId: string; bankingInfo: BankingInfoDTO },
+    @Req() req: any,
+  ) {
     const userId = req.userId as string;
-    return await this.ticketService.cancleTicket(body.ticketId, userId);
+    return await this.ticketService.sendRequestCancleTicket(
+      body.ticketId,
+      userId,
+      body.bankingInfo,
+    );
+  }
+
+  @Post('confirm-cancle')
+  async confirmCancleTicket(
+    @Body()
+    body: {
+      ticketId: string;
+      bankingInfo: BankingInfoDTO;
+      otp: string;
+    },
+    @Req() req: any,
+  ) {
+    const userId = req.userId as string;
+    return await this.ticketService.confirmCancleTicket(
+      body.ticketId,
+      body.bankingInfo,
+      body.otp,
+    );
   }
 
   @Get('my-ticket')

@@ -2,6 +2,9 @@ import { IsString, IsNotEmpty, IsNumber, IsDateString } from 'class-validator';
 
 export class SendTicketEmailDTO {
   @IsString()
+  ticketId: string;
+
+  @IsString()
   @IsNotEmpty()
   fullName: string;
 

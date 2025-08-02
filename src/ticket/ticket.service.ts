@@ -16,6 +16,8 @@ import { SortTicketEnum } from 'src/common/enum/sortTicketEnum';
 import { SendTicketEmailDTO } from 'src/mail/dto/sendTicketEmail.dto';
 import { MailModule } from 'src/mail/mail.module';
 import { MailService } from 'src/mail/mail.service';
+import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
+import { CancellationRequestService } from 'src/cancellationRequest/cancellationRequest.service';
 
 @Injectable()
 export class TicketService {
@@ -27,6 +29,7 @@ export class TicketService {
     private readonly seatService: SeatService,
     private dataSource: DataSource,
     private mailService: MailService,
+    private cancelationRequestService: CancellationRequestService,
   ) {}
 
   async createTicket(ticketData: CreateTIcketDTO, user: User) {
@@ -106,16 +109,15 @@ export class TicketService {
 
       await queryRunner.commitTransaction();
 
-      console.log('asdasdasdasdasdasdsad');
       // Guiwr mail
       for (const t of createdTickets) {
         const ticket = await this.findTicket(t.ticketId as string);
-        console.log(ticket);
         if (!ticket) {
           throw new BadRequestException('Có lỗi j đó');
         }
 
         const emailData: SendTicketEmailDTO = {
+          ticketId: ticket.ticketId,
           fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
           busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
           busCode: ticket.trip.vehicle.code,
@@ -158,26 +160,78 @@ export class TicketService {
     return result;
   }
 
-  async cancleTicket(ticketId: string, userId: string) {
-    const ticket = await this.ticketRepository.findOne({
-      where: {
-        ticketId,
-        user: {
-          userId,
-        },
-      },
-    });
+  async sendRequestCancleTicket(
+    ticketId: string,
+    userId: string,
+    bankingInfo: BankingInfoDTO,
+  ) {
+    const ticket = await this.findTicket(ticketId);
     if (!ticket) {
       throw new BadRequestException(
         'Vé không tồn tại hoặc không thuộc về người dùng này',
       );
     }
-    ticket.status = TicketStatus.CANCELLED;
-    await this.ticketRepository.save(ticket);
+
+    // Kiểm tra email gửi yêu cầu có giống với email lúc đặt vé không
+    if (bankingInfo.emailRequest != ticket.user.email) {
+      console.log(bankingInfo.emailRequest);
+      console.log(ticket.user.email);
+      throw new BadRequestException('Email hủy vé không khớp với email đặt vé');
+    }
+
+    // send otp gmail
+    const order = {
+      ticketId: ticketId,
+      fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+      busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
+      busCode: ticket.trip.vehicle.code,
+      departDate: ticket.trip.departDate.toISOString(),
+      price: ticket.trip.price,
+      seatCode: ticket.seat.seatCode,
+      origin: ticket.trip.vehicle.route.origin.name,
+      destination: ticket.trip.vehicle.route.destination.name,
+    };
+    await this.mailService.sendEmailCancleTicket(
+      ticket.user.email,
+      order,
+      bankingInfo,
+    );
+
     return {
       status: 'success',
-      message: 'Vé đã được hủy thành công',
+      message: 'Đã gửi thông tin qua mail, vui lòng xác thực để hoàn tất!!',
       ticket,
+    };
+  }
+
+  async confirmCancleTicket(
+    ticketId: string,
+    bankingInfo: BankingInfoDTO,
+    otp: string,
+  ) {
+    // Đổi trạng thái vé thành cancelled
+    const ticket = await this.findTicket(ticketId);
+    if (!ticket) {
+      throw new BadRequestException('Không có vé tương ứng');
+    }
+    ticket.status = TicketStatus.CANCELLED;
+    await this.ticketRepository.save(ticket);
+
+    // Kiểm tra otp
+
+    // Tạo 1 cancellationRequest
+    await this.cancelationRequestService.create({
+      ticket,
+      requestedBy: ticket.user,
+      accountHolderName: bankingInfo.bankAccountName,
+      bankName: bankingInfo.bankName,
+      accountNumber: bankingInfo.accountNumber,
+    });
+
+    return {
+      status: 'success',
+      message:
+        'hủy vé thành công, chúng tôi sẽ hoàn tiền lại trong vòng 3 ngày',
     };
   }
 

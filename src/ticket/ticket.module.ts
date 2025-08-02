@@ -10,6 +10,7 @@ import { StopPointModule } from 'src/stopPoint/stopPoint.module';
 import { UserModule } from 'src/user/user.module';
 import { MailModule } from 'src/mail/mail.module';
 import { CancellationRequest } from 'src/cancellationRequest/cancellationRequest.entity';
+import { CancelationRequesModule } from 'src/cancellationRequest/cancellationRequest.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CancellationRequest } from 'src/cancellationRequest/cancellationRequest
     VehicleModule,
     UserModule,
     MailModule,
+    CancelationRequesModule,
   ],
   controllers: [ticketController],
   providers: [TicketService],
