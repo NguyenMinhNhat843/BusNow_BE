@@ -16,13 +16,18 @@ import { RouteModule } from './route/route.module';
 import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
-console.log(process.env.DATABASE_URL);
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-ioredis';
+
 @Module({
   imports: [
+    // Cấu hình .env
     ConfigModule.forRoot({
       isGlobal: true, // Để biến môi trường có thể sử dụng toàn cục
       envFilePath: process.env.NODE_ENV === 'development' ? '.env' : undefined,
     }),
+
+    // Cấu hình connect Postgre
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST || 'localhost',
@@ -44,6 +49,15 @@ console.log(process.env.DATABASE_URL);
     //     },
     //   }),
     // }),
+
+    // Cấu hình Redis
+    CacheModule.register({
+      isGlobal: true,
+      store: redisStore as any,
+      host: 'localhost',
+      port: 6379,
+      ttl: 300, // 5 phút
+    }),
     AuthModule,
     UserModule,
     ProviderModule,
