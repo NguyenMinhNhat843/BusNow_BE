@@ -211,14 +211,6 @@ export class TicketService {
     bankingInfo: BankingInfoDTO,
     otp: string,
   ) {
-    // Đổi trạng thái vé thành cancelled
-    const ticket = await this.findTicket(ticketId);
-    if (!ticket) {
-      throw new BadRequestException('Không có vé tương ứng');
-    }
-    ticket.status = TicketStatus.CANCELLED;
-    await this.ticketRepository.save(ticket);
-
     // Kiểm tra otp
     const otpFromRedis = await this.redisService.getRedis(
       `cancel-ticket:${ticketId}`,
@@ -226,6 +218,14 @@ export class TicketService {
 
     let result: any = null;
     if (otp === otpFromRedis) {
+      // Cập nhật trạng thái ticket là CANCELLED
+      const ticket = await this.findTicket(ticketId);
+      if (!ticket) {
+        throw new BadRequestException('Không có vé tương ứng');
+      }
+      ticket.status = TicketStatus.CANCELLED;
+      await this.ticketRepository.save(ticket);
+
       // Tạo 1 cancellationRequest
       result = await this.cancelationRequestService.create({
         ticket,
@@ -373,6 +373,7 @@ export class TicketService {
       .leftJoinAndSelect('route.origin', 'origin')
       .leftJoinAndSelect('route.destination', 'destination')
       .where('user.phoneNumber = :phone', { phone: phone })
+      .andWhere('ticket.status != :status', { status: TicketStatus.CANCELLED })
       .select([
         'ticket.ticketId',
         'ticket.status',

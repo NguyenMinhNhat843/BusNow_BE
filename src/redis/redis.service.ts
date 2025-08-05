@@ -9,15 +9,19 @@ export class RedisService {
     private cache: Cache,
   ) {}
 
-  async setRedis(key: string, value: any, ttl: number): Promise<void> {
-    await this.cache.set(key, value, ttl);
+  async setRedis(key: string, value: any, ttl: number): Promise<any> {
+    console.log('[Redis SET]', key, value, ttl);
+    return await this.cache.set(key, value, { ttl } as any);
   }
 
   async getRedis(key: string): Promise<any> {
-    return await this.cache.get(key);
+    const val = await this.cache.get(key);
+    console.log('[Redis GET]', key, '=>', val);
+    return val;
   }
 
   async delRedis(key: string): Promise<void> {
+    console.log('[Redis DEL]', key);
     await this.cache.del(key);
   }
 }

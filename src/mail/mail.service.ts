@@ -45,7 +45,7 @@ export class MailService {
   ) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 số
     // Lưu vào redis
-    await this.cacheService.setRedis(
+    const otpResult = await this.cacheService.setRedis(
       `cancel-ticket:${order.ticketId}`,
       otp,
       300,
