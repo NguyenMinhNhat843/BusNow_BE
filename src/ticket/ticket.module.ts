@@ -11,6 +11,7 @@ import { UserModule } from 'src/user/user.module';
 import { MailModule } from 'src/mail/mail.module';
 import { CancellationRequest } from 'src/cancellationRequest/cancellationRequest.entity';
 import { CancelationRequesModule } from 'src/cancellationRequest/cancellationRequest.module';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CancelationRequesModule } from 'src/cancellationRequest/cancellationReq
     UserModule,
     MailModule,
     CancelationRequesModule,
+    RedisModule,
   ],
   controllers: [ticketController],
   providers: [TicketService],

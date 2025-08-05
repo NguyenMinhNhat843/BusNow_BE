@@ -17,7 +17,7 @@ import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
 import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-ioredis';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -28,35 +28,26 @@ import * as redisStore from 'cache-manager-ioredis';
     }),
 
     // Cấu hình connect Postgre
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: 5432,
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '123456789',
-      database: process.env.DB_NAME || 'BusNow',
-      autoLoadEntities: true,
-      synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
-    }),
-    // TypeOrmModule.forRootAsync({
-    //   useFactory: () => ({
-    //     type: 'postgres',
-    //     url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
-    //     autoLoadEntities: true,
-    //     synchronize: true, // Đừng bật ở production nếu đã deploy dữ liệu
-    //     ssl: {
-    //       rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
-    //     },
-    //   }),
+    // TypeOrmModule.forRoot({
+    //   type: 'postgres',
+    //   host: process.env.DB_HOST || 'localhost',
+    //   port: 5432,
+    //   username: process.env.DB_USERNAME || 'postgres',
+    //   password: process.env.DB_PASSWORD || '123456789',
+    //   database: process.env.DB_NAME || 'BusNow',
+    //   autoLoadEntities: true,
+    //   synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
     // }),
-
-    // Cấu hình Redis
-    CacheModule.register({
-      isGlobal: true,
-      store: redisStore as any,
-      host: 'localhost',
-      port: 6379,
-      ttl: 300, // 5 phút
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'postgres',
+        url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
+        autoLoadEntities: true,
+        synchronize: true, // Đừng bật ở production nếu đã deploy dữ liệu
+        ssl: {
+          rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
+        },
+      }),
     }),
     AuthModule,
     UserModule,

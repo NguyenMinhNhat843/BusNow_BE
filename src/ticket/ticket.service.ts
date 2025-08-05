@@ -18,6 +18,7 @@ import { MailModule } from 'src/mail/mail.module';
 import { MailService } from 'src/mail/mail.service';
 import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 import { CancellationRequestService } from 'src/cancellationRequest/cancellationRequest.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class TicketService {
@@ -30,6 +31,7 @@ export class TicketService {
     private dataSource: DataSource,
     private mailService: MailService,
     private cancelationRequestService: CancellationRequestService,
+    private redisService: RedisService,
   ) {}
 
   async createTicket(ticketData: CreateTIcketDTO, user: User) {
@@ -218,20 +220,34 @@ export class TicketService {
     await this.ticketRepository.save(ticket);
 
     // Kiểm tra otp
+    const otpFromRedis = await this.redisService.getRedis(
+      `cancel-ticket:${ticketId}`,
+    );
 
-    // Tạo 1 cancellationRequest
-    await this.cancelationRequestService.create({
-      ticket,
-      requestedBy: ticket.user,
-      accountHolderName: bankingInfo.bankAccountName,
-      bankName: bankingInfo.bankName,
-      accountNumber: bankingInfo.accountNumber,
-    });
+    let result: any = null;
+    if (otp === otpFromRedis) {
+      // Tạo 1 cancellationRequest
+      result = await this.cancelationRequestService.create({
+        ticket,
+        requestedBy: ticket.user,
+        accountHolderName: bankingInfo.bankAccountName,
+        bankName: bankingInfo.bankName,
+        accountNumber: bankingInfo.accountNumber,
+      });
+
+      // xóa otp
+      await this.redisService.delRedis(`cancel-ticket:${ticketId}`);
+    } else {
+      throw new BadRequestException(
+        'OTP sai hoặc không tồn tại, vui lòng gửi lại!!!',
+      );
+    }
 
     return {
       status: 'success',
       message:
         'hủy vé thành công, chúng tôi sẽ hoàn tiền lại trong vòng 3 ngày',
+      data: result,
     };
   }
 
