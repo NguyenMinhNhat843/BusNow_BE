@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Ticket } from 'src/ticket/ticket.entity';
 import { User } from 'src/user/user.entity';
@@ -17,6 +18,7 @@ export class CancellationRequest {
   id: string;
 
   @OneToOne(() => Ticket, { eager: true })
+  @JoinColumn()
   ticket: Ticket;
 
   @ManyToOne(() => User, { eager: true })
