@@ -13,7 +13,6 @@ import { TicketModule } from './ticket/ticket.module';
 import { PaymentModue } from './payment/payment.module';
 import { ProviderModule } from './provider/provider.module';
 import { RouteModule } from './route/route.module';
-import { ApplicationModule } from './application/application.module';
 import { MailModule } from './mail/mail.module';
 import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -62,7 +61,6 @@ import { RedisModule } from './redis/redis.module';
     TicketModule,
     PaymentModue,
     S3Module,
-    ApplicationModule,
     MailModule,
     CancellationRequest,
     RedisModule,

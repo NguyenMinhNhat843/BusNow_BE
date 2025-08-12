@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Trip } from 'src/trip/trip.entity';
 import { User } from 'src/user/user.entity';
-import { BusTypeEnum } from 'src/enum/BusTypeEnum';
+import { BusTypeEnum } from 'src/common/enum/BusTypeEnum';
 import { Route } from 'src/route/route.entity';
 
 @Entity()

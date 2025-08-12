@@ -12,7 +12,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/user/guards/roles.guard';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { CreateRouteDTO } from './dto/createRouteDTO';
-import { JwtPayload } from 'src/interface/JwtPayload';
+import { JwtPayload } from 'src/common/type/JwtPayload';
 
 @Controller('route')
 export class RouteController {

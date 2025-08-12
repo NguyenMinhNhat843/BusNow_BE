@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { StopPointEnum } from 'src/enum/StopPointsEnum';
+import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
 
 export class CreateStopPointDto {
   @IsNotEmpty()

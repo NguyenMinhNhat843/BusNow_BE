@@ -18,8 +18,9 @@ import { RolesGuard } from 'src/user/guards/roles.guard';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { UserService } from 'src/user/user.service';
-import { JwtPayload } from 'src/interface/JwtPayload';
+import { JwtPayload } from 'src/common/type/JwtPayload';
 import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
+import { OptionalJwtAuthGuard } from '@/common/guard/OptionalJwtAuthGuard';
 
 @Controller('ticket')
 export class ticketController {
@@ -29,15 +30,20 @@ export class ticketController {
   ) {}
 
   @Post()
-  // @UseGuards(new RolesGuard([RoleEnum.USER, RoleEnum.GUEST]))
+  @UseGuards(OptionalJwtAuthGuard)
   async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
+    // Lấy thông tin user từ request (nếu đã đăng nhập)
     const user = ((req as any).user as User) || null;
+    console.log(user);
 
+    // Trường hợp chưa đăng nhập (guest)
     if (user === null) {
+      // Nếu guest có cung cấp số điện thoại
       if (body.phone) {
         const guest = await this.userService.findUserByPhoneNumber(body.phone);
+
         if (!guest) {
-          // check tồn tại thông tin
+          // Guest chưa tồn tại trong hệ thống → bắt buộc phải có đầy đủ thông tin
           if (!body.firstName) {
             throw new BadRequestException('Phải có firstName');
           }
@@ -47,19 +53,22 @@ export class ticketController {
           if (!body.email) {
             throw new BadRequestException('Phải có email');
           }
-          // Tạo 1 guest
+
+          // Tạo mới 1 guest user
           const res = await this.userService.createGuest(
             body.firstName,
             body.lastName,
             body.email,
             body.phone,
           );
+
+          // Tạo vé cho guest mới tạo
           const result = await this.ticketService.createTicket(body, res);
           return result;
         } else {
-          // Kiểm tra role có phải guest ko
+          // Nếu số điện thoại đã tồn tại trong hệ thống
           if (guest.role === RoleEnum.GUEST) {
-            // update lại thông tin
+            // Cập nhật lại thông tin guest (trường hợp guest quay lại đặt vé)
             await this.userService.updateProfile(
               {
                 firstName: body.firstName,
@@ -68,24 +77,29 @@ export class ticketController {
               guest.email,
             );
 
-            // Tạo vé
+            // Tạo vé cho guest
             const result = await this.ticketService.createTicket(body, guest);
             return result;
           } else {
+            // Nếu số điện thoại thuộc user đã đăng ký → yêu cầu đăng nhập
             throw new BadRequestException(
-              'Số điện thoại đã được đăng ký tìa khoản, vui lòng đăng nhập để thao tác!!!',
+              'Số điện thoại đã được đăng ký tài khoản, vui lòng đăng nhập để thao tác!!!',
             );
           }
         }
       } else {
+        // Guest không nhập số điện thoại → không cho đặt vé
         throw new BadRequestException(
           'Bạn đang là guest, vui lòng nhập phone để đặt vé',
         );
       }
-      // đặt vé với guest
+
+      // Trường hợp đã đăng nhập với role USER
     } else if (user.role === RoleEnum.USER) {
       const result = await this.ticketService.createTicket(body, user);
       return result;
+
+      // Các role khác (admin, staff, ...) không được đặt vé
     } else {
       throw new BadRequestException('User hoặc Guest mới được đặt vé');
     }
@@ -236,6 +250,14 @@ export class ticketController {
         user: result.user,
         tickets: flattened,
       },
+    };
+  }
+  @Get('ticket-by-id/:ticketId')
+  async findTicketById(@Param('ticketId') ticketId: string) {
+    const result = await this.ticketService.findTicket(ticketId);
+    return {
+      status: 'success',
+      data: result,
     };
   }
 }

@@ -5,7 +5,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
-import { BusTypeEnum } from 'src/enum/BusTypeEnum';
+import { BusTypeEnum } from 'src/common/enum/BusTypeEnum';
 
 export class CreateVehicleDTO {
   @IsString()

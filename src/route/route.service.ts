@@ -10,7 +10,7 @@ import { User } from 'src/user/user.entity';
 import { CreateRouteDTO } from './dto/createRouteDTO';
 import { Location } from 'src/location/location.entity';
 import { StopPointService } from 'src/stopPoint/stopPoint.service';
-import { StopPointEnum } from 'src/enum/StopPointsEnum';
+import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
 import { StopPoint } from 'src/stopPoint/stopPoint.entity';
 
 @Injectable()

@@ -1,4 +1,4 @@
-import { TripStatusEnum } from 'src/enum/TripStatusEnum';
+import { TripStatusEnum } from 'src/common/enum/TripStatusEnum';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import {
   Column,

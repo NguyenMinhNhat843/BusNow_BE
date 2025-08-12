@@ -1,4 +1,4 @@
-import { StopPointEnum } from 'src/enum/StopPointsEnum';
+import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
 import { Location } from 'src/location/location.entity';
 import { Route } from 'src/route/route.entity';
 import { Ticket } from 'src/ticket/ticket.entity';

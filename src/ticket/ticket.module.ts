@@ -27,5 +27,6 @@ import { RedisModule } from 'src/redis/redis.module';
   ],
   controllers: [ticketController],
   providers: [TicketService],
+  exports: [TicketService, TypeOrmModule],
 })
 export class TicketModule {}
