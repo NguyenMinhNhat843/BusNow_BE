@@ -9,8 +9,6 @@ import { Repository } from 'typeorm';
 import { User } from 'src/user/user.entity';
 import { CreateRouteDTO } from './dto/createRouteDTO';
 import { Location } from 'src/location/location.entity';
-import { StopPointService } from 'src/stopPoint/stopPoint.service';
-import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
 import { StopPoint } from 'src/stopPoint/stopPoint.entity';
 
 @Injectable()
@@ -39,7 +37,6 @@ export class RouteService {
       stopPointIds = [],
     } = dto;
 
-    // 0. Kiểm tra trùng route
     const existingRoute = await this.routeRepo.findOne({
       where: {
         origin: { locationId: originId },
@@ -53,7 +50,7 @@ export class RouteService {
       throw new BadRequestException('Route này đã tồn tại cho nhà xe của bạn');
     }
 
-    // Kiểm tra phải cso tối thiểu 1 điểm đón, 1 điểm trả
+    // Kiểm tra phải có tối thiểu 1 điểm đón, 1 điểm trả
     if (stopPointIds.length <= 1) {
       throw new NotFoundException('Bạn chưa đặt điểm dừng cho route');
     }
@@ -92,7 +89,6 @@ export class RouteService {
 
   async updateRoute() {}
 
-  // Get route - pagination
   async getRoutes(page = 1, limit = 10, providerId?: string) {
     const skip = (page - 1) * limit;
 
@@ -122,5 +118,18 @@ export class RouteService {
         totalPage: Math.ceil(total / limit),
       },
     };
+  }
+
+  async deleteRoute(routeId: string) {
+    const exists = await this.routeRepo.findOne({
+      where: {
+        routeId,
+      },
+    });
+    if (!exists) throw new NotFoundException('Tuyến đường không tồn tại!');
+
+    return this.routeRepo.delete({
+      routeId,
+    });
   }
 }

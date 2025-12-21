@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Query,
   Req,
@@ -13,6 +15,7 @@ import { RolesGuard } from 'src/user/guards/roles.guard';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { CreateRouteDTO } from './dto/createRouteDTO';
 import { JwtPayload } from 'src/common/type/JwtPayload';
+import { ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 @Controller('route')
 export class RouteController {
@@ -20,6 +23,7 @@ export class RouteController {
 
   @Post('create')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER, RoleEnum.ADMIN]))
+  @ApiBody({ type: CreateRouteDTO })
   async createRoute(
     @Body() body: CreateRouteDTO,
     @Req() req: Request & { user: JwtPayload },
@@ -37,6 +41,18 @@ export class RouteController {
 
   @Get('list')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN, RoleEnum.PROVIDER]))
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Trang hiện tại, mặc định 1',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Số lượng item/trang, mặc định 10',
+  })
   async getRoutes(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -54,5 +70,12 @@ export class RouteController {
       status: 'success',
       ...response,
     };
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN, RoleEnum.PROVIDER]))
+  @ApiParam({ name: 'id', type: String })
+  async deleteRoute(@Param('id') routeId: string) {
+    return this.routeService.deleteRoute(routeId);
   }
 }

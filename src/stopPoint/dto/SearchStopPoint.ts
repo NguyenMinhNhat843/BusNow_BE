@@ -1,6 +1,5 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
 
 export class SearchStopPointDto {
   @IsOptional()

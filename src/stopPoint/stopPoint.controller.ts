@@ -11,7 +11,6 @@ import {
 import { StopPointService } from './stopPoint.service';
 import { SearchStopPointDto } from './dto/SearchStopPoint';
 import { CreateStopPointDto } from './dto/createStopPointDTO';
-import { ApiOperation } from '@nestjs/swagger';
 import { UpdateStopPointDto } from './dto/updateStopPointDto';
 
 @Controller('stop-point')
