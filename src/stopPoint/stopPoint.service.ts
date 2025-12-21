@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,11 +8,11 @@ import { DataSource, Like, Repository } from 'typeorm';
 import { StopPoint } from './stopPoint.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateStopPointDto } from './dto/createStopPointDTO';
-import { LocationService } from 'src/location/locationService';
-import { validate as isUUID } from 'uuid';
 import { SearchStopPointDto } from './dto/SearchStopPoint';
 import { Route } from 'src/route/route.entity';
 import { Location } from 'src/location/location.entity';
+import { UpdateStopPointDto } from './dto/updateStopPointDto';
+import { DeleteStopPointDto } from './dto/deleteStopPointDto';
 
 @Injectable()
 export class StopPointService {
@@ -26,6 +27,10 @@ export class StopPointService {
     private cityRepo: Repository<Location>,
     private dataSource: DataSource,
   ) {}
+
+  async isExistsStopPoint(stopPointId: string) {
+    return await this.stopPointRepo.existsBy({ id: stopPointId });
+  }
 
   async findLocationDetailByIdOrName(id?: string, name?: string) {
     if (id) {
@@ -70,9 +75,6 @@ export class StopPointService {
     }));
   }
 
-  // Lấy stopPoint theo Route, lấy hết - có phân trang, lấy stopPoint theo city
-  // Lấy theo type: Pickup or dropoff
-  // sort theo createdAt
   async searchStopPoint(options: SearchStopPointDto) {
     const { cityId, page = 1, limit = 10 } = options;
 
@@ -112,6 +114,37 @@ export class StopPointService {
     return {
       status: 'success',
       data: stopPoint,
+    };
+  }
+
+  async updateStopPoint(payload: UpdateStopPointDto) {
+    const { address, name, stopPointId } = payload;
+
+    const exists = await this.isExistsStopPoint(stopPointId);
+    if (!exists) throw new ConflictException('Điểm dừng không tồn tại!');
+
+    await this.stopPointRepo.update(
+      { id: stopPointId },
+      {
+        name,
+        address,
+      },
+    );
+
+    return {
+      message: 'Cập nhật điểm dừng thành công',
+    };
+  }
+
+  async deleteStopPoint(stopPointId: string) {
+    const result = await this.stopPointRepo.delete({ id: stopPointId });
+
+    if (result.affected === 0) {
+      throw new ConflictException('Điểm dừng không tồn tại!');
+    }
+
+    return {
+      message: 'Xoá điểm dừng thành công',
     };
   }
 }

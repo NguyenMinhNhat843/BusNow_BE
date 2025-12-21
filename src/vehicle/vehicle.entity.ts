@@ -18,11 +18,9 @@ export class Vehicle {
   @PrimaryGeneratedColumn('uuid')
   vehicleId: string;
 
-  // biển số xe
   @Column({ unique: true })
-  code: string;
+  code: string; // biển số xe
 
-  // số ghế
   @Column()
   totalSeat: number;
 
@@ -38,15 +36,14 @@ export class Vehicle {
   @JoinColumn({ name: 'routeId' })
   route: Route;
 
-  // Mỗi xe chỉ chyaj route và time cố định để generate trip tự động
+  // Mỗi xe chỉ chạy route và time cố định
   @Column({ nullable: true })
   departHour: string;
 
-  @ManyToOne(
-    () => User, // Trỏ tới entity cha là transportProvider
-    (provider) => provider.vehicles, // Trỏ tới mảng vehicles trong transportProvider
-    { onDelete: 'CASCADE', nullable: true }, // Nếu xóa provider thì xóa hết vehicles liên quan
-  )
+  @ManyToOne(() => User, (provider) => provider.vehicles, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
   @JoinColumn({ name: 'providerId' })
   provider: User;
 

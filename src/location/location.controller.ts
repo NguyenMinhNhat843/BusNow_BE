@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { LocationService } from './locationService';
 import { createLocationDto } from './dto/createLcationDto';
+import { deleteLocationDto } from './dto/deleteLocationDto';
+import { ApiResponse } from '@nestjs/swagger';
 
 @Controller('location')
 export class LocationController {
@@ -11,7 +21,16 @@ export class LocationController {
     return this.locationService.createLocation(body);
   }
 
+  @Delete()
+  async deleteLocationDto(@Body() body: deleteLocationDto) {
+    return this.locationService.deleteLocation(body);
+  }
+
   @Get('get-all')
+  @ApiResponse({
+    status: 200,
+    type: [createLocationDto],
+  })
   async getAllLocation() {
     return this.locationService.getAllLocation();
   }

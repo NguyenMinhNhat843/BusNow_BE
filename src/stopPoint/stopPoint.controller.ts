@@ -1,7 +1,18 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { StopPointService } from './stopPoint.service';
 import { SearchStopPointDto } from './dto/SearchStopPoint';
 import { CreateStopPointDto } from './dto/createStopPointDTO';
+import { ApiOperation } from '@nestjs/swagger';
+import { UpdateStopPointDto } from './dto/updateStopPointDto';
 
 @Controller('stop-point')
 export class StopPointController {
@@ -15,6 +26,16 @@ export class StopPointController {
   @Post()
   create(@Body() dto: CreateStopPointDto) {
     return this.stopPointService.createStopPoint(dto);
+  }
+
+  @Put()
+  async updateStopPoint(@Body() payload: UpdateStopPointDto) {
+    return this.stopPointService.updateStopPoint(payload);
+  }
+
+  @Delete(':stopPointId')
+  async deleteStopPoint(@Param('stopPointId') stopPointId: string) {
+    return this.stopPointService.deleteStopPoint(stopPointId);
   }
 
   @Get('/by-route/:routeId')

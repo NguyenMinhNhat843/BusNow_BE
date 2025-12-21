@@ -7,6 +7,7 @@ import { StopPoint } from '@/stopPoint/stopPoint.entity';
 import { createLocationDto } from './dto/createLcationDto';
 import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { deleteLocationDto } from './dto/deleteLocationDto';
+import { UpdateLocationDto } from './dto/updateLocationDto';
 
 @Injectable()
 export class LocationService {
@@ -64,7 +65,6 @@ export class LocationService {
         name: locationName,
       });
       await manager.save(newLocation);
-      console.log(newLocation);
 
       const stopPointEntities = stopPoints.map((sp) => {
         return manager.create(StopPoint, {
@@ -83,8 +83,17 @@ export class LocationService {
 
   async deleteLocation(payload: deleteLocationDto) {
     const { locationId } = payload;
+
     const isExists = await this.isLocationExists(locationId);
-    if (!isExists) throw new ConflictException('Location không tồn tại!');
+    if (!isExists) {
+      throw new ConflictException('Location không tồn tại!');
+    }
+
+    await this.locationRep.delete({ locationId });
+
+    return {
+      message: 'Xoá location thành công',
+    };
   }
 
   async findLocationByNameOrId(keyword: string) {
@@ -100,4 +109,21 @@ export class LocationService {
 
     return location;
   }
+
+  // async updateLocation(payload: UpdateLocationDto) {
+  //   const {locationId, locationName, stopPoints} = payload
+
+  //   const exists = await this.isLocationExists(locationId)
+  //   if(!exists) {
+  //     throw new ConflictException('Địa điểm không tồn tại!')
+  //   }
+
+  //   await this.dataSource.transaction(async (manager) => {
+  //     await manager.update(Location,
+  //       {locationId},
+  //       {name: locationName}
+  //     )
+
+  //   })
+  // }
 }

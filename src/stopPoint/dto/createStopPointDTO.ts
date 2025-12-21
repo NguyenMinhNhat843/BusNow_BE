@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateStopPointDto {
@@ -12,8 +12,8 @@ export class CreateStopPointDto {
   @IsString()
   address: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
-  cityId: string;
+  cityId?: string;
 }

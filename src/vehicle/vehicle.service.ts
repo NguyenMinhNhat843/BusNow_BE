@@ -8,7 +8,6 @@ import { Vehicle } from './vehicle.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { validate as isUUID } from 'uuid';
 import { CreateVehicleDTO } from './dto/createVehicleDTO';
-import { UserService } from 'src/user/user.service';
 import { User } from 'src/user/user.entity';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { Route } from 'src/route/route.entity';
@@ -27,15 +26,14 @@ export class VehicleService {
   ) {}
 
   findVehicleByIdOrCodeNumber(keyword: string) {
-    const vehicle = this.vehicleRepository.findOne({
+    return this.vehicleRepository.findOne({
       where: isUUID(keyword) ? { vehicleId: keyword } : { code: keyword },
     });
-    return vehicle;
   }
 
   async createVehicle(data: CreateVehicleDTO) {
     const { code, totalSeat, busType, providerId, routeId, departHour } = data;
-    // Kiểm tra code - biển số xe đã tồn tại chưa
+    // Kiểm tra biển số xe đã tồn tại chưa
     const vehicleExists = await this.vehicleRepository.findOne({
       where: {
         code: code,
@@ -54,7 +52,6 @@ export class VehicleService {
       },
       relations: ['origin', 'destination'],
     });
-    // console.log('[vehicleService] - [route]: ', route);
     if (!route) {
       throw new NotFoundException('Tuyến đường này không tồn tại!!!');
     }
@@ -89,11 +86,6 @@ export class VehicleService {
     if (provider.role !== RoleEnum.PROVIDER) {
       throw new BadRequestException('Người dùng này không phải nhà cung cấp');
     }
-
-    // Tính repeatsDay
-    // const repeatsDay = Math.ceil(
-    //   (route.duration * 2 + route.restAtDestination) / 8,
-    // );
 
     // Taoj vehicle
     const vehicle = this.vehicleRepository.create({
@@ -171,5 +163,16 @@ export class VehicleService {
       },
       data,
     };
+  }
+
+  async deleteVehicle(vehicleId: string) {
+    const vehicle = await this.vehicleRepository.findOne({
+      where: { vehicleId },
+    });
+    if (!vehicle) throw new NotFoundException('Xe này không tồn tại');
+
+    await this.vehicleRepository.remove(vehicle);
+
+    return { status: 'success', message: `Xe ${vehicle.code} đã bị xóa` };
   }
 }

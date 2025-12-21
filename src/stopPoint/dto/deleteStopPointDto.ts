@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsUUID } from 'class-validator';
 
-export class deleteLocationDto {
+export class DeleteStopPointDto {
   @ApiProperty()
   @IsUUID()
-  locationId: string;
+  stopPointId: string;
 }
