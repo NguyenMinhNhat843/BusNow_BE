@@ -36,7 +36,7 @@ import { RedisModule } from './redis/redis.module';
       password: process.env.DB_PASSWORD || '123456789',
       database: process.env.DB_NAME || 'BusNow',
       autoLoadEntities: true,
-      synchronize: true, // Chỉ sử dụng trong môi trường phát triển ádsad
+      synchronize: true, // Chỉ sử dụng trong môi trường phát triển
     }),
     // TypeOrmModule.forRootAsync({
     //   useFactory: () => ({

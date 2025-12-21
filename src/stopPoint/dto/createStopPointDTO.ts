@@ -1,16 +1,19 @@
-import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { StopPointEnum } from 'src/common/enum/StopPointsEnum';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateStopPointDto {
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   name: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   address: string;
 
-  @IsNotEmpty()
+  @ApiProperty()
   @IsUUID()
+  @IsOptional()
   cityId: string;
 }
