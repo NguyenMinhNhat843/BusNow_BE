@@ -21,6 +21,9 @@ import { GenTripDTO } from './dto/genTripDTO';
 import { DeleteTripDTO } from './dto/deleteTripDTO';
 import { DeleteTripBeforeDate } from './dto/deleteTripBeforeDate.dto';
 import { TripBussinessService } from './tripBussiness.service';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { GetTripsByVehicleDTO } from './dto/getTripsByVehicleDTO';
+import { Trip } from './trip.entity';
 
 @Controller('trip')
 export class TripController {
@@ -68,18 +71,16 @@ export class TripController {
   }
 
   @Get('vehicle')
-  async getTripsByVehicle(
-    @Query('vehicleId') vehicleId: string,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-  ) {
-    return this.tripService.findTripByVehicleId(vehicleId, +page, +limit);
+  async getTripsByVehicle(@Query() query: GetTripsByVehicleDTO) {
+    const { vehicleId, limit, page } = query;
+    return this.tripService.findTripByVehicleId(vehicleId, page, limit);
   }
 
   @Post('gen-trips')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER]))
+  @ApiBody({ type: GenTripDTO })
   async genTrips(@Body() data: GenTripDTO) {
-    const response = await this.tripService.genTrip(data); //asdsad
+    const response = await this.tripService.genTrip(data);
     return response;
   }
 
@@ -94,6 +95,8 @@ export class TripController {
   @Delete('/delete-trips-before-date')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.PROVIDER]))
+  @ApiOperation({})
+  @ApiBody({ type: DeleteTripBeforeDate })
   async deleteTripsBeforeDate(@Body() data: DeleteTripBeforeDate) {
     // Nếu không có date thì mặc định là now
     const date = data.date || new Date().toISOString();

@@ -17,12 +17,12 @@ export class CancellationRequest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => Ticket, { eager: true })
+  @OneToOne(() => Ticket, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn()
   ticket: Ticket;
 
   @ManyToOne(() => User, { eager: true })
-  requestedBy: User; // người gửi yêu cầu hủy
+  requestedBy: User;
 
   @Column()
   accountHolderName: string;

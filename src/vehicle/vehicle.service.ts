@@ -28,6 +28,12 @@ export class VehicleService {
   findVehicleByIdOrCodeNumber(keyword: string) {
     return this.vehicleRepository.findOne({
       where: isUUID(keyword) ? { vehicleId: keyword } : { code: keyword },
+      relations: {
+        route: {
+          origin: true,
+          destination: true,
+        },
+      },
     });
   }
 

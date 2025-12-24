@@ -6,10 +6,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
 } from 'class-validator';
 import { SortByEnum } from 'src/common/enum/SortByEnum';
-import { VehicleTypeBus } from 'src/common/enum/vehicleTypeForBUS';
 import { BusTypeEnum } from 'src/common/enum/BusTypeEnum';
 
 export class SearchTripDTO {

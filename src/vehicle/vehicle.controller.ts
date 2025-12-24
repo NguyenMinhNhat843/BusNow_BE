@@ -15,6 +15,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/user/guards/roles.guard';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { Vehicle } from './vehicle.entity';
 
 interface JwtPayload {
   userId: string;
@@ -44,7 +45,20 @@ export class VehicleController {
     };
   }
 
-  @Get('list')
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN, RoleEnum.PROVIDER]))
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'vehicleId',
+  })
+  @ApiResponse({ type: Vehicle })
+  async getVehicleById(@Param('id') id: string): Promise<Vehicle | null> {
+    const vehicle = await this.vehicleService.findVehicleByIdOrCodeNumber(id);
+    return vehicle;
+  }
+
+  @Get('')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN, RoleEnum.PROVIDER]))
   @ApiQuery({
     name: 'page',

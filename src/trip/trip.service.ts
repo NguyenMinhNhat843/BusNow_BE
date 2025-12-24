@@ -50,7 +50,7 @@ export class TripService {
       where: {
         vehicle: { vehicleId },
       },
-      relations: ['vehicle'], // nếu muốn include luôn vehicle info
+      relations: ['vehicle'],
       order: {
         departDate: 'ASC',
       },
@@ -74,7 +74,7 @@ export class TripService {
               totalPage: Math.ceil(total / limit),
             }
           : null,
-      trips,
+      data: trips,
     };
   }
 
@@ -332,10 +332,10 @@ export class TripService {
     const returnTrips: Trip[] = [];
 
     // Lấy ngày hiện tại làm gốc
-    const startTime = new Date(data.startTime);
+    const startTime = data.startTime ? new Date(data.startTime) : new Date();
     const endTime = new Date(data.endTime);
     if (startTime > endTime) {
-      throw new BadRequestException('THời gian end phải lớn hơn start');
+      throw new BadRequestException('Thời gian end phải lớn hơn start');
     }
 
     for (
@@ -347,10 +347,6 @@ export class TripService {
       const fullDepartDate = new Date(
         `${format(curent, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
       );
-      // console.log(
-      //   '[tripService] - [gen trip] - fullDepartDate: ',
-      //   fullDepartDate,
-      // );
 
       // 🔍 Kiểm tra nếu trip đã tồn tại (theo vehicle và departDate)
       const existed = await this.tripRepository.findOne({
