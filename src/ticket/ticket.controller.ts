@@ -18,9 +18,14 @@ import { RolesGuard } from 'src/user/guards/roles.guard';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { UserService } from 'src/user/user.service';
-import { JwtPayload } from 'src/common/type/JwtPayload';
 import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 import { OptionalJwtAuthGuard } from '@/common/guard/OptionalJwtAuthGuard';
+import { UpdateTicketDTO } from './dto/updateTicketDTO';
+import { Ticket } from './ticket.entity';
+import { ApiOkResponse, ApiResponse } from '@nestjs/swagger';
+import { searchTicketDTO } from './dto/searchTicketDTO';
+import { CancleTicketDTO } from './dto/cancleTicketDTO';
+import { ConfirmCancleTicketDTO } from './dto/confirmCancleTicketDTO';
 
 @Controller('ticket')
 export class ticketController {
@@ -34,7 +39,6 @@ export class ticketController {
   async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
     // Lấy thông tin user từ request (nếu đã đăng nhập)
     const user = ((req as any).user as User) || null;
-    console.log(user);
 
     // Trường hợp chưa đăng nhập (guest)
     if (user === null) {
@@ -105,72 +109,37 @@ export class ticketController {
     }
   }
 
-  @Put('send-mail-cancle-ticket')
-  async cancleTicket(
-    @Body() body: { ticketId: string; bankingInfo: BankingInfoDTO },
-    @Req() req: any,
-  ) {
-    const userId = req.userId as string;
-    return await this.ticketService.sendRequestCancleTicket(
-      body.ticketId,
-      userId,
-      body.bankingInfo,
-    );
+  @Put()
+  @UseGuards(JwtAuthGuard, new RolesGuard(['provider']))
+  async updateTicket(@Body() body: UpdateTicketDTO): Promise<Ticket> {
+    return await this.ticketService.updateTicket(body);
+  }
+
+  @Post('search')
+  async searchTicket(@Body() body: searchTicketDTO) {
+    return await this.ticketService.searchTicket(body);
+  }
+
+  @Put('cancle-ticket')
+  @UseGuards(OptionalJwtAuthGuard)
+  async cancleTicket(@Body() body: CancleTicketDTO, @Req() req: Request) {
+    const user = ((req as any).user as User) || null;
+    return await this.ticketService.cancleTicket(body, user.userId);
   }
 
   @Post('confirm-cancle')
   async confirmCancleTicket(
     @Body()
-    body: {
-      ticketId: string;
-      bankingInfo: BankingInfoDTO;
-      otp: string;
-    },
-    @Req() req: any,
+    body: ConfirmCancleTicketDTO,
   ) {
-    const userId = req.userId as string;
-    return await this.ticketService.confirmCancleTicket(
-      body.ticketId,
-      body.bankingInfo,
-      body.otp,
-    );
+    return await this.ticketService.confirmCancleTicket(body);
   }
 
   @Get('my-ticket')
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
   async getMyTicket(@Req() req: any) {
     const phoneNumber = req.user.phoneNumber as string;
-    const result = await this.ticketService.findTicketByPhone(phoneNumber);
-    const flattened = result.tickets.map((ticket) => ({
-      ticketId: ticket.ticketId,
-      providerId: ticket.trip.vehicle.provider.userId,
-      providerName: ticket.trip.vehicle.provider.lastName,
-      status: ticket.status,
-      seatCode: ticket.seat.seatCode,
-
-      price: ticket.trip.price,
-      departDate: ticket.trip.departDate,
-      tripStatus: ticket.trip.tripStatus,
-      tripType: ticket.trip.type,
-
-      vehicleCode: ticket.trip.vehicle.code,
-      vehicleType: ticket.trip.vehicle.busType,
-
-      origin: ticket.trip.vehicle.route.origin.name,
-      destination: ticket.trip.vehicle.route.destination.name,
-
-      paymentMethod: ticket.payment?.method,
-      paymentStatus: ticket.payment?.status,
-      paymentTime: ticket.payment?.paymentTime,
-    }));
-
-    return {
-      status: 'success',
-      data: {
-        user: result.user,
-        tickets: flattened,
-      },
-    };
+    return await this.ticketService.findTicketByPhone(phoneNumber);
   }
 
   @Post('filter-ticket')
@@ -221,43 +190,6 @@ export class ticketController {
   async findTicketByPhone(@Param('phone') phone: string) {
     const result = await this.ticketService.findTicketByPhone(phone);
 
-    const flattened = result.tickets.map((ticket) => ({
-      ticketId: ticket.ticketId,
-      providerId: ticket.trip.vehicle.provider.userId,
-      providerName: ticket.trip.vehicle.provider.lastName,
-      status: ticket.status,
-      seatCode: ticket.seat.seatCode,
-
-      price: ticket.trip.price,
-      departDate: ticket.trip.departDate,
-      tripStatus: ticket.trip.tripStatus,
-      tripType: ticket.trip.type,
-
-      vehicleCode: ticket.trip.vehicle.code,
-      vehicleType: ticket.trip.vehicle.busType,
-
-      origin: ticket.trip.vehicle.route.origin.name,
-      destination: ticket.trip.vehicle.route.destination.name,
-
-      paymentMethod: ticket.payment?.method,
-      paymentStatus: ticket.payment?.status,
-      paymentTime: ticket.payment?.paymentTime,
-    }));
-
-    return {
-      status: 'success',
-      data: {
-        user: result.user,
-        tickets: flattened,
-      },
-    };
-  }
-  @Get('ticket-by-id/:ticketId')
-  async findTicketById(@Param('ticketId') ticketId: string) {
-    const result = await this.ticketService.findTicket(ticketId);
-    return {
-      status: 'success',
-      data: result,
-    };
+    return result;
   }
 }

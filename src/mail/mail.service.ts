@@ -64,7 +64,7 @@ export class MailService {
       <p><strong>Giờ khởi hành:</strong> ${new Date(order.departDate).toLocaleString()}</p>
 
       <h3>Thông tin hoàn tiền</h3>
-      <p><strong>Tên chủ tài khoản:</strong> ${bankingInfo.bankAccountName}</p>
+      <p><strong>Tên chủ tài khoản:</strong> ${bankingInfo.accountName}</p>
       <p><strong>Số tài khoản:</strong> ${bankingInfo.accountNumber}</p>
       <p><strong>Ngân hàng:</strong> ${bankingInfo.bankName}</p>
       

@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +25,11 @@ import { MailService } from 'src/mail/mail.service';
 import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 import { CancellationRequestService } from 'src/cancellationRequest/cancellationRequest.service';
 import { RedisService } from 'src/redis/redis.service';
+import { UpdateTicketDTO } from './dto/updateTicketDTO';
+import { searchTicketDTO } from './dto/searchTicketDTO';
+import { CancleTicketDTO } from './dto/cancleTicketDTO';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
+import { ConfirmCancleTicketDTO } from './dto/confirmCancleTicketDTO';
 
 @Injectable()
 export class TicketService {
@@ -145,6 +156,61 @@ export class TicketService {
     }
   }
 
+  async updateTicket(payload: UpdateTicketDTO): Promise<Ticket> {
+    const { ticketId, status } = payload;
+    const ticket = await this.ticketRepository.findOne({
+      where: { ticketId },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket không tồn tại');
+    }
+    if (status) ticket.status = status;
+
+    await this.ticketRepository.save(ticket);
+
+    return ticket;
+  }
+
+  async searchTicket(payload: searchTicketDTO) {
+    const { limit = 10, page = 1, ticketId } = payload;
+
+    const where: any = {};
+    if (ticketId) where.ticketId = ticketId;
+
+    const [data, total] = await this.ticketRepository.findAndCount({
+      where,
+      relations: {
+        user: true,
+        seat: true,
+        trip: {
+          vehicle: {
+            route: {
+              origin: true,
+              destination: true,
+            },
+            provider: true,
+          },
+        },
+        payment: true,
+        cancellationRequest: true,
+      },
+      take: limit,
+      skip: (page - 1) * limit,
+      order: { createdAt: 'DESC' },
+    });
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async findTicket(ticketId: string) {
     const result = await this.ticketRepository
       .createQueryBuilder('ticket')
@@ -162,56 +228,51 @@ export class TicketService {
     return result;
   }
 
-  async sendRequestCancleTicket(
-    ticketId: string,
-    userId: string,
-    bankingInfo: BankingInfoDTO,
-  ) {
+  async cancleTicket(payload: CancleTicketDTO, userId: string) {
+    const { ticketId, bankingInfo } = payload;
     const ticket = await this.findTicket(ticketId);
-    if (!ticket) {
-      throw new BadRequestException(
-        'Vé không tồn tại hoặc không thuộc về người dùng này',
+    if (!ticket) throw new NotFoundException('Ticket không tồn tại');
+
+    if (ticket.status === String(TicketStatus.CANCELLED)) return;
+
+    if (ticket.status !== String(TicketStatus.PAID)) {
+      await this.ticketRepository.delete({ ticketId });
+      return { message: 'Hủy vé thành công' };
+    } else {
+      if (!bankingInfo)
+        throw new ConflictException('Thiếu thông tin tài khoản');
+      if (userId !== ticket.user.userId)
+        throw new BadRequestException(
+          'UserId hủy vé không khớp với UserId đặt vé',
+        );
+      const order = {
+        ticketId: ticketId,
+        fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
+        busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
+        busCode: ticket.trip.vehicle.code,
+        departDate: ticket.trip.departDate.toISOString(),
+        price: ticket.trip.price,
+        seatCode: ticket.seat.seatCode,
+        origin: ticket.trip.vehicle.route.origin.name,
+        destination: ticket.trip.vehicle.route.destination.name,
+      };
+      await this.mailService.sendEmailCancleTicket(
+        ticket.user.email,
+        order,
+        bankingInfo,
       );
+      return {
+        status: 'success',
+        message: 'Đã gửi thông tin qua mail, vui lòng xác thực để hoàn tất!!',
+        ticket,
+      };
     }
-
-    // Kiểm tra email gửi yêu cầu có giống với email lúc đặt vé không
-    if (bankingInfo.emailRequest != ticket.user.email) {
-      console.log(bankingInfo.emailRequest);
-      console.log(ticket.user.email);
-      throw new BadRequestException('Email hủy vé không khớp với email đặt vé');
-    }
-
-    // send otp gmail
-    const order = {
-      ticketId: ticketId,
-      fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
-      busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
-      busCode: ticket.trip.vehicle.code,
-      departDate: ticket.trip.departDate.toISOString(),
-      price: ticket.trip.price,
-      seatCode: ticket.seat.seatCode,
-      origin: ticket.trip.vehicle.route.origin.name,
-      destination: ticket.trip.vehicle.route.destination.name,
-    };
-    await this.mailService.sendEmailCancleTicket(
-      ticket.user.email,
-      order,
-      bankingInfo,
-    );
-
-    return {
-      status: 'success',
-      message: 'Đã gửi thông tin qua mail, vui lòng xác thực để hoàn tất!!',
-      ticket,
-    };
   }
 
-  async confirmCancleTicket(
-    ticketId: string,
-    bankingInfo: BankingInfoDTO,
-    otp: string,
-  ) {
-    // Kiểm tra otp
+  async confirmCancleTicket(payload: ConfirmCancleTicketDTO) {
+    const { cancleTicketRequest, otp } = payload;
+    const { ticketId, bankingInfo } = cancleTicketRequest;
+    if (!bankingInfo) throw new NotFoundException('Thiếu thông tin');
     const otpFromRedis = await this.redisService.getRedis(
       `cancel-ticket:${ticketId}`,
     );
@@ -230,7 +291,7 @@ export class TicketService {
       result = await this.cancelationRequestService.create({
         ticket,
         requestedBy: ticket.user,
-        accountHolderName: bankingInfo.bankAccountName,
+        accountHolderName: bankingInfo.accountName,
         bankName: bankingInfo.bankName,
         accountNumber: bankingInfo.accountNumber,
       });
@@ -360,69 +421,28 @@ export class TicketService {
   }
 
   async findTicketByPhone(phone: string) {
-    // find() method chỉ chỉ định field của entity gốc (Ticket), muốn lấy cái khác phải dùng quẻyBuilder
-    const response = await this.ticketRepository
-      .createQueryBuilder('ticket')
-      .leftJoinAndSelect('ticket.user', 'user')
-      .leftJoinAndSelect('ticket.trip', 'trip')
-      .leftJoinAndSelect('ticket.seat', 'seat')
-      .leftJoinAndSelect('ticket.payment', 'payment')
-      .leftJoinAndSelect('trip.vehicle', 'vehicle')
-      .leftJoinAndSelect('vehicle.route', 'route')
-      .leftJoinAndSelect('vehicle.provider', 'provider')
-      .leftJoinAndSelect('route.origin', 'origin')
-      .leftJoinAndSelect('route.destination', 'destination')
-      .where('user.phoneNumber = :phone', { phone: phone })
-      .andWhere('ticket.status != :status', { status: TicketStatus.CANCELLED })
-      .select([
-        'ticket.ticketId',
-        'ticket.status',
-        'user.userId',
-        'user.firstName',
-        'user.lastName',
-        'user.email',
-        'user.phoneNumber',
-        'user.role',
-        'trip.tripId',
-        'trip.price',
-        'trip.departDate',
-        'trip.type',
-        'trip.tripStatus',
-        'seat.seatId',
-        'seat.seatCode',
-        'payment.paymentId',
-        'payment.paymentTime',
-        'payment.method',
-        'payment.status',
-        'vehicle.vehicleId',
-        'vehicle.code',
-        'vehicle.busType',
-        'route.routeId',
-        'origin.locationId',
-        'origin.name',
-        'destination.locationId',
-        'destination.name',
-        'provider.firstName',
-        'provider.lastName',
-        'provider.userId',
-      ])
-      .getMany();
-    // tên, phone, email, route: from - to, departTime, seat, paymentTIme, price, status
-    if (!response.length) {
-      return { user: null, tickets: [] };
-    }
+    const response = await this.ticketRepository.find({
+      where: {
+        user: {
+          phoneNumber: phone,
+        },
+      },
+      relations: {
+        user: true,
+        trip: {
+          vehicle: {
+            route: {
+              origin: true,
+              destination: true,
+            },
+            provider: true,
+          },
+        },
+        seat: true,
+        payment: true,
+      },
+    });
 
-    const user = {
-      userId: response[0].user.userId,
-      fullName: response[0].user.firstName + ' ' + response[0].user.lastName,
-      email: response[0].user.email,
-      phoneNumber: response[0].user.phoneNumber,
-      role: response[0].user.role,
-    };
-
-    return {
-      user,
-      tickets: response,
-    };
+    return response;
   }
 }

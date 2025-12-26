@@ -6,6 +6,7 @@ import { CreateUserByGoogleDTO } from './dto/createUserByGoogleDTO';
 import { updateProfileDTO } from './dto/updateProfileDTO';
 import { S3Service } from 'src/s3/s3.service';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
+import { SearchUserDTO } from './dto/searchUserDTO';
 
 @Injectable()
 export class UserService {
@@ -58,6 +59,41 @@ export class UserService {
   async findUserByPhoneNumber(phone: string) {
     const user = await this.userRepo.findOneBy({ phoneNumber: phone });
     return user;
+  }
+
+  async searchUser(payload: SearchUserDTO) {
+    const { userId, email, phone, page = 1, limit = 10 } = payload;
+
+    if (!userId && !email && !phone) {
+      throw new BadRequestException('Phải truyền ít nhất 1 điều kiện tìm kiếm');
+    }
+
+    const where: any = {};
+
+    // Ưu tiên theo độ chính xác
+    if (userId) {
+      where.userId = userId;
+    } else if (email) {
+      where.email = email;
+    } else if (phone) {
+      where.phoneNumber = phone;
+    }
+
+    const [users, total] = await this.userRepo.findAndCount({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data: users,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getUserLimit(start: number, end: number) {

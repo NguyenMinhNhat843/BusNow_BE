@@ -1,5 +1,4 @@
 import { TicketStatus } from 'src/common/enum/TicketStatus';
-import { StopPoint } from 'src/stopPoint/stopPoint.entity';
 import { Payment } from 'src/payment/payment.entity';
 import { Seat } from 'src/seat/seat.entity';
 import { Trip } from 'src/trip/trip.entity';

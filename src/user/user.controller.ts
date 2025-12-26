@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -18,6 +19,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { updateProfileDTO } from './dto/updateProfileDTO';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { S3Service } from 'src/s3/s3.service';
+import { SearchUserDTO } from './dto/searchUserDTO';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -76,6 +78,11 @@ export class UserController {
       throw new BadRequestException('Người dùng không tồn tại');
     }
     return user;
+  }
+
+  @Get()
+  async searchUser(@Query() query: SearchUserDTO) {
+    return await this.userService.searchUser(query);
   }
 
   @Put('updateProfile')

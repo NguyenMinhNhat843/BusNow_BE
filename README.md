@@ -1,0 +1,6 @@
+- Lỗi nghiệp vụ chức năng hủy vé:
+  - Seat đang để relation 1 - 1 với Ticket
+  - Tuy nhiên khi hủy Ticket thì Ticket này sẽ chuyển sang status là CANCLELED
+  - Khi đó user khác không thể đặt lại Ticket hủy đó vì nó đang relation với Seat
+  - Giải pháp chữa cháy:
+    - Khi hủy vé sẽ xóa vé đó luôn
