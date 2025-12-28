@@ -6,13 +6,11 @@ import {
 import { Between, ILike, Repository } from 'typeorm';
 import { CancellationRequest } from './cancellationRequest.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { TicketService } from 'src/ticket/ticket.service';
-import { UserService } from 'src/user/user.service';
-import { CancellationStatus } from 'src/common/enum/RefundEnum';
 import { Ticket } from 'src/ticket/ticket.entity';
 import { User } from 'src/user/user.entity';
-import { FilterRefundRequestDto } from './dto/Filter.dto';
 import { UpdateCancellationRequestDto } from './dto/update.dto';
+import { SearchRefundRequestDTO } from './dto/SearchRefundRequestDTO';
+import { REFUND_STATUS } from './type/type';
 
 @Injectable()
 export class CancellationRequestService {
@@ -40,7 +38,7 @@ export class CancellationRequestService {
       bankName: dto.bankName,
       accountNumber: dto.accountNumber,
       note: dto.note || '',
-      status: CancellationStatus.PENDING,
+      status: REFUND_STATUS.PENDING,
     });
 
     await this.refundRepo.save(cancellation);
@@ -51,62 +49,31 @@ export class CancellationRequestService {
     };
   }
 
-  async getLimit(page: number, limit: number) {
+  async searchRefundRequest(payload: SearchRefundRequestDTO) {
+    const { limit = 10, page = 1, phoneNumber, status } = payload;
+
+    const safeLimit = Math.min(limit, 50);
+    const skip = (page - 1) * safeLimit;
+
     const [data, total] = await this.refundRepo.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-      relations: ['requestedBy', 'ticket'],
+      where: {
+        status,
+        ticket: {
+          user: {
+            phoneNumber,
+          },
+        },
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+      take: safeLimit,
+      skip,
     });
 
     return {
-      status: 'success',
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
       data,
-    };
-  }
-
-  async filter(filters: FilterRefundRequestDto) {
-    const { page, limit, phoneNumber, status, startDate, endDate } = filters;
-
-    const where: any = {};
-
-    if (phoneNumber) {
-      where.requestedBy = { phoneNumber: ILike(`%${phoneNumber}%`) };
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (startDate && endDate) {
-      where.createdAt = Between(new Date(startDate), new Date(endDate));
-    } else if (startDate) {
-      where.createdAt = Between(new Date(startDate), new Date());
-    }
-
-    const [data, total] = await this.refundRepo.findAndCount({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-      relations: ['requestedBy', 'ticket'],
-    });
-
-    return {
-      status: 'success',
-      pagination: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-      data,
+      total,
     };
   }
 

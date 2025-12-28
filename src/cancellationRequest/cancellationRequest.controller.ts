@@ -6,28 +6,21 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
 import { CancellationRequestService } from './cancellationRequest.service';
-import { FilterRefundRequestDto } from './dto/Filter.dto';
 import { UpdateCancellationRequestDto } from './dto/update.dto';
+import { SearchRefundRequestDTO } from './dto/SearchRefundRequestDTO';
 
 @Controller('/refund-request')
 export class RefundRequestController {
   constructor(private refundRequestService: CancellationRequestService) {}
 
-  @Get('/limit')
-  async getLimit(
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-  ) {
-    return await this.refundRequestService.getLimit(page, limit);
-  }
-
-  @Get('filter')
-  async filter(@Query() filters: FilterRefundRequestDto) {
-    return await this.refundRequestService.filter(filters);
+  @Post('/search')
+  async searchRefundRequest(@Body() body: SearchRefundRequestDTO) {
+    return await this.refundRequestService.searchRefundRequest(body);
   }
 
   @Patch(':id')

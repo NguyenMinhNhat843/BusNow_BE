@@ -312,6 +312,12 @@ export class TicketService {
     };
   }
 
+  async deleteTicket(id: string) {
+    return await this.ticketRepository.delete({
+      ticketId: id,
+    });
+  }
+
   async getListTicketByUserId(userId: string) {
     const tickets = await this.ticketRepository.find({
       where: {

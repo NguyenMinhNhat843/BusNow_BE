@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Ticket } from 'src/ticket/ticket.entity';
 import { User } from 'src/user/user.entity';
-import { CancellationStatus } from 'src/common/enum/RefundEnum';
+import { REFUND_STATUS, RefundStatusType } from './type/type';
 
 @Entity()
 export class CancellationRequest {
@@ -38,10 +38,10 @@ export class CancellationRequest {
 
   @Column({
     type: 'enum',
-    enum: CancellationStatus,
-    default: CancellationStatus.PENDING,
+    enum: REFUND_STATUS,
+    default: REFUND_STATUS.PENDING,
   })
-  status: CancellationStatus;
+  status: RefundStatusType;
 
   @ManyToOne(() => User, { nullable: true, eager: true })
   handledBy?: User; // nhân viên xử lý hoàn tiền

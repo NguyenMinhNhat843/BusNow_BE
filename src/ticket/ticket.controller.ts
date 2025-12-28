@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -22,7 +23,7 @@ import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 import { OptionalJwtAuthGuard } from '@/common/guard/OptionalJwtAuthGuard';
 import { UpdateTicketDTO } from './dto/updateTicketDTO';
 import { Ticket } from './ticket.entity';
-import { ApiOkResponse, ApiResponse } from '@nestjs/swagger';
+import { ApiOkResponse, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { searchTicketDTO } from './dto/searchTicketDTO';
 import { CancleTicketDTO } from './dto/cancleTicketDTO';
 import { ConfirmCancleTicketDTO } from './dto/confirmCancleTicketDTO';
@@ -133,6 +134,11 @@ export class ticketController {
     body: ConfirmCancleTicketDTO,
   ) {
     return await this.ticketService.confirmCancleTicket(body);
+  }
+
+  @Delete(':id')
+  async deleteTicket(@Param('id') id: string) {
+    return await this.ticketService.deleteTicket(id);
   }
 
   @Get('my-ticket')

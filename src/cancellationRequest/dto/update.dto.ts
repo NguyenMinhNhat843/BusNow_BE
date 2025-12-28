@@ -6,7 +6,7 @@ import {
   IsNumberString,
   IsDateString,
 } from 'class-validator';
-import { CancellationStatus } from 'src/common/enum/RefundEnum';
+import { REFUND_STATUS, RefundStatusType } from '../type/type';
 
 export class UpdateCancellationRequestDto {
   @IsOptional()
@@ -34,8 +34,8 @@ export class UpdateCancellationRequestDto {
   note?: string;
 
   @IsOptional()
-  @IsEnum(CancellationStatus)
-  status?: CancellationStatus;
+  @IsEnum(REFUND_STATUS)
+  status?: RefundStatusType;
 
   @IsOptional()
   @IsUUID()
