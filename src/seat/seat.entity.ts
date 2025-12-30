@@ -22,8 +22,6 @@ export class Seat {
   @Column({ default: false })
   isBooked: boolean;
 
-  // tickket: Ticket
-
   // Chỉ có khi type vehicle !== BUS
   @Column({
     type: 'enum',
