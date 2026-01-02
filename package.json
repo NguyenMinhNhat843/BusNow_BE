@@ -41,6 +41,7 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.6.1",
+    "moment": "^2.30.1",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",

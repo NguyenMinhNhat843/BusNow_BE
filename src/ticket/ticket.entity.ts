@@ -1,4 +1,3 @@
-import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { Payment } from 'src/payment/payment.entity';
 import { Seat } from 'src/seat/seat.entity';
 import { Trip } from 'src/trip/trip.entity';
@@ -14,6 +13,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { CancellationRequest } from '@/cancellationRequest/cancellationRequest.entity';
+import { TicketStatus } from './type';
 
 @Entity()
 export class Ticket {
@@ -25,7 +25,7 @@ export class Ticket {
     enum: TicketStatus,
     default: TicketStatus.UNPAID,
   })
-  status: string;
+  status: TicketStatus;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
@@ -35,7 +35,10 @@ export class Ticket {
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
 
-  @OneToOne(() => Seat)
+  // @OneToOne(() => Seat)
+  // @JoinColumn({ name: 'seatId' })
+  // seat: Seat;
+  @ManyToOne(() => Seat, (seat) => seat.tickets)
   @JoinColumn({ name: 'seatId' })
   seat: Seat;
 

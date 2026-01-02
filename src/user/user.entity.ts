@@ -1,3 +1,4 @@
+import { PaymentIntent } from '@/paymentIntent/paymentIntent.entity';
 import { Router } from 'express';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { Payment } from 'src/payment/payment.entity';
@@ -56,4 +57,7 @@ export class User {
   // Một provider sẽ có nhiều router của họ
   @OneToMany(() => Route, (r) => r.provider)
   routers: Router[];
+
+  @OneToMany(() => PaymentIntent, (pi) => pi.user)
+  paymentIntens: PaymentIntent[];
 }

@@ -9,9 +9,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { SortTicketEnum } from 'src/common/enum/sortTicketEnum';
-import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { TimeRangeDTO } from './timeRangeDTO';
 import { Type } from 'class-transformer';
+import { TicketStatus } from '../type';
 
 export class FilterTicketDTO {
   @IsNumber()

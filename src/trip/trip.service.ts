@@ -3,26 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  Between,
-  Brackets,
-  Equal,
-  ILike,
-  MoreThanOrEqual,
-  Repository,
-} from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Trip } from './trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createTripDTO } from './dto/createTripDTO';
 import { SearchTripDTO } from './dto/searchTripDTO';
 import { LocationService } from 'src/location/locationService';
 import { VehicleService } from 'src/vehicle/vehicle.service';
-import { DateTime } from 'luxon';
 import { SortByEnum } from 'src/common/enum/SortByEnum';
 import { GenTripDTO } from './dto/genTripDTO';
 import { Vehicle } from 'src/vehicle/vehicle.entity';
 import { addDays, addHours, addMinutes, format } from 'date-fns';
-import { Route } from 'src/route/route.entity';
 import { DeleteTripDTO } from './dto/deleteTripDTO';
 
 @Injectable()

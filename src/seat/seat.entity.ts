@@ -7,6 +7,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -33,4 +34,7 @@ export class Seat {
   @ManyToOne(() => Trip, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tripId' })
   trip: Trip;
+
+  @OneToMany(() => Ticket, (ticket) => ticket.seat)
+  tickets: Ticket[];
 }

@@ -38,76 +38,8 @@ export class ticketController {
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
   async createTicket(@Body() body: CreateTIcketDTO, @Req() req: Request) {
-    // Lấy thông tin user từ request (nếu đã đăng nhập)
-    const user = ((req as any).user as User) || null;
-
-    // Trường hợp chưa đăng nhập (guest)
-    if (user === null) {
-      // Nếu guest có cung cấp số điện thoại
-      if (body.phone) {
-        const guest = await this.userService.findUserByPhoneNumber(body.phone);
-
-        if (!guest) {
-          // Guest chưa tồn tại trong hệ thống → bắt buộc phải có đầy đủ thông tin
-          if (!body.firstName) {
-            throw new BadRequestException('Phải có firstName');
-          }
-          if (!body.lastName) {
-            throw new BadRequestException('Phải có lastName');
-          }
-          if (!body.email) {
-            throw new BadRequestException('Phải có email');
-          }
-
-          // Tạo mới 1 guest user
-          const res = await this.userService.createGuest(
-            body.firstName,
-            body.lastName,
-            body.email,
-            body.phone,
-          );
-
-          // Tạo vé cho guest mới tạo
-          const result = await this.ticketService.createTicket(body, res);
-          return result;
-        } else {
-          // Nếu số điện thoại đã tồn tại trong hệ thống
-          if (guest.role === RoleEnum.GUEST) {
-            // Cập nhật lại thông tin guest (trường hợp guest quay lại đặt vé)
-            await this.userService.updateProfile(
-              {
-                firstName: body.firstName,
-                lastName: body.lastName,
-              },
-              guest.email,
-            );
-
-            // Tạo vé cho guest
-            const result = await this.ticketService.createTicket(body, guest);
-            return result;
-          } else {
-            // Nếu số điện thoại thuộc user đã đăng ký → yêu cầu đăng nhập
-            throw new BadRequestException(
-              'Số điện thoại đã được đăng ký tài khoản, vui lòng đăng nhập để thao tác!!!',
-            );
-          }
-        }
-      } else {
-        // Guest không nhập số điện thoại → không cho đặt vé
-        throw new BadRequestException(
-          'Bạn đang là guest, vui lòng nhập phone để đặt vé',
-        );
-      }
-
-      // Trường hợp đã đăng nhập với role USER
-    } else if (user.role === RoleEnum.USER) {
-      const result = await this.ticketService.createTicket(body, user);
-      return result;
-
-      // Các role khác (admin, staff, ...) không được đặt vé
-    } else {
-      throw new BadRequestException('User hoặc Guest mới được đặt vé');
-    }
+    const user = (req as any).user as User | undefined;
+    return this.ticketService.createTicketWithUserContext(body, user);
   }
 
   @Put()

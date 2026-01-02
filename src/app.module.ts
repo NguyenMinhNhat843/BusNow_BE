@@ -16,8 +16,9 @@ import { RouteModule } from './route/route.module';
 import { MailModule } from './mail/mail.module';
 import { CancellationRequest } from './cancellationRequest/cancellationRequest.entity';
 import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
 import { RedisModule } from './redis/redis.module';
+import { VnpayModule } from './vnpay/vnpay.module';
+import { PaymentIntent } from './paymentIntent/paymentIntent.entity';
 
 @Module({
   imports: [
@@ -64,6 +65,8 @@ import { RedisModule } from './redis/redis.module';
     MailModule,
     CancellationRequest,
     RedisModule,
+    VnpayModule,
+    PaymentIntent,
   ],
   controllers: [],
   providers: [],

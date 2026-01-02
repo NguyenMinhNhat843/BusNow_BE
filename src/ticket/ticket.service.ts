@@ -1,11 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTIcketDTO } from './dto/createTicketDTO';
@@ -15,85 +14,99 @@ import { StopPointService } from 'src/stopPoint/stopPoint.service';
 import { TripService } from 'src/trip/trip.service';
 import { SeatService } from 'src/seat/seat.service';
 import { Payment } from 'src/payment/payment.entity';
-import { TicketStatus } from 'src/common/enum/TicketStatus';
 import { PaymentStatus } from 'src/common/enum/PaymentStatus';
 import { FilterTicketDTO } from './dto/filterTicketDTO';
 import { SortTicketEnum } from 'src/common/enum/sortTicketEnum';
 import { SendTicketEmailDTO } from 'src/mail/dto/sendTicketEmail.dto';
-import { MailModule } from 'src/mail/mail.module';
 import { MailService } from 'src/mail/mail.service';
-import { BankingInfoDTO } from 'src/mail/dto/bankingInfo.dto';
 import { CancellationRequestService } from 'src/cancellationRequest/cancellationRequest.service';
 import { RedisService } from 'src/redis/redis.service';
 import { UpdateTicketDTO } from './dto/updateTicketDTO';
 import { searchTicketDTO } from './dto/searchTicketDTO';
 import { CancleTicketDTO } from './dto/cancleTicketDTO';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { ConfirmCancleTicketDTO } from './dto/confirmCancleTicketDTO';
+import { TicketStatus } from './type';
+import { Trip } from '@/trip/trip.entity';
+import { RoleEnum } from '@/common/enum/RoleEnum';
+import { UserService } from '@/user/user.service';
 
 @Injectable()
 export class TicketService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
-    private stopPointService: StopPointService,
     private readonly tripService: TripService,
     private readonly seatService: SeatService,
     private dataSource: DataSource,
     private mailService: MailService,
     private cancelationRequestService: CancellationRequestService,
     private redisService: RedisService,
+    private userService: UserService,
   ) {}
 
-  async createTicket(ticketData: CreateTIcketDTO, user: User) {
+  async createTicket(
+    ticketData: CreateTIcketDTO,
+    user: User,
+    statusTicket: TicketStatus = TicketStatus.UNPAID,
+  ) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
       const { tripId, seatCode, methodPayment, statusPayment } = ticketData;
 
-      // Kiểm tra trip tồn tại
-      const trip = await this.tripService.findTripByID(tripId);
+      // Lấy trip trong transaction
+      const trip = await queryRunner.manager.findOne(Trip, {
+        where: { tripId },
+        relations: ['vehicle'],
+      });
+
       if (!trip) {
         throw new BadRequestException(
           'Chuyến đi không tồn tại trong hệ thống!',
         );
       }
 
-      const totalSeat = trip.vehicle.totalSeat;
-
-      // Kiểm tra ghế hợp lệ & đã được đặt chưa
-      for (const seat of seatCode) {
-        if (seat < 1 || seat > totalSeat) {
-          throw new BadRequestException(
-            `Mã ghế ${seat} không hợp lệ. Chỉ từ 1 đến ${totalSeat}`,
-          );
-        }
-
-        const existsSeat = await this.seatService.checkSeatExistsOnTrip(
-          seat,
-          tripId,
-        );
-        if (existsSeat) {
-          throw new BadRequestException(
-            `Ghế ${seat} đã được đặt trong chuyến đi này!`,
-          );
-        }
+      // Check đủ ghế trống
+      if (trip.availabelSeat < seatCode.length) {
+        throw new BadRequestException('Không đủ ghế trống');
       }
 
-      const createdTickets: any[] = [];
+      // Validate seatCode hợp lệ
+      const totalSeat = trip.vehicle.totalSeat;
+      const invalidSeat = seatCode.find((seat) => seat < 1 || seat > totalSeat);
+      if (invalidSeat) {
+        throw new BadRequestException(
+          `Mã ghế ${invalidSeat} không hợp lệ. Chỉ từ 1 đến ${totalSeat}`,
+        );
+      }
+
+      // Check seat đã tồn tại (atomic)
+      const existedSeats = await queryRunner.manager.find(Seat, {
+        where: {
+          trip: { tripId },
+          seatCode: In(seatCode),
+        },
+      });
+
+      if (existedSeats.length > 0) {
+        throw new BadRequestException(
+          `Ghế ${existedSeats.map((s) => s.seatCode).join(', ')} đã được đặt`,
+        );
+      }
+
+      const createdTickets: Ticket[] = [];
+      // Tạo ticket + payment + seat
       for (const seat of seatCode) {
-        // Tạo payment
         const payment = queryRunner.manager.create(Payment, {
           amount: trip.price,
           paymentTime: new Date(),
           method: methodPayment,
-          status: statusPayment || PaymentStatus.PENDING,
+          status: statusPayment ?? PaymentStatus.PENDING,
           user,
         });
         await queryRunner.manager.save(payment);
 
-        // Tạo seat
         const newSeat = queryRunner.manager.create(Seat, {
           seatCode: seat,
           trip,
@@ -101,12 +114,11 @@ export class TicketService {
         });
         await queryRunner.manager.save(newSeat);
 
-        // Tạo ticket
         const newTicket = queryRunner.manager.create(Ticket, {
           trip,
           seat: newSeat,
           seatCode: seat,
-          status: 'UNPAID',
+          status: statusTicket,
           user,
           payment,
           ticketTime: new Date(),
@@ -115,24 +127,21 @@ export class TicketService {
 
         createdTickets.push(newTicket);
       }
-
-      // Cập nhật số lượng ghế trống
+      // Update số ghế trống
       trip.availabelSeat -= seatCode.length;
       await queryRunner.manager.save(trip);
 
+      // Commit transaction
       await queryRunner.commitTransaction();
 
-      // Guiwr mail
       for (const t of createdTickets) {
-        const ticket = await this.findTicket(t.ticketId as string);
-        if (!ticket) {
-          throw new BadRequestException('Có lỗi j đó');
-        }
+        const ticket = await this.findTicket(t.ticketId);
+        if (!ticket) continue;
 
         const emailData: SendTicketEmailDTO = {
           ticketId: ticket.ticketId,
           fullName: `${ticket.user.firstName} ${ticket.user.lastName}`,
-          busName: ticket.trip.vehicle.provider.lastName || 'Nhà xe',
+          busName: ticket.trip.vehicle.provider?.lastName || 'Nhà xe',
           busCode: ticket.trip.vehicle.code,
           departDate: ticket.trip.departDate.toISOString(),
           price: ticket.trip.price,
@@ -140,20 +149,79 @@ export class TicketService {
           origin: ticket.trip.vehicle.route.origin.name,
           destination: ticket.trip.vehicle.route.destination.name,
         };
+
         await this.mailService.sendTicketEmail(user.email, emailData);
       }
-
-      return {
-        message: 'Tạo vé thành công!',
-        tickets: createdTickets,
-      };
     } catch (error) {
-      await queryRunner.rollbackTransaction();
-      console.log(error);
-      throw new BadRequestException(error.message || 'Lỗi khi tạo vé');
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+      throw error;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  private validateGuestInfo(body: CreateTIcketDTO) {
+    if (!body.firstName || !body.lastName || !body.email) {
+      throw new BadRequestException(
+        'Guest bắt buộc phải có firstName, lastName và email',
+      );
+    }
+  }
+
+  async createTicketWithUserContext(
+    ticketData: CreateTIcketDTO,
+    authUser?: User,
+  ) {
+    let user: User;
+
+    // ===== CASE 1: Đã đăng nhập =====
+    if (authUser) {
+      if (authUser.role !== RoleEnum.USER) {
+        throw new BadRequestException('User không hợp lệ để đặt vé');
+      }
+      user = authUser;
+    } else {
+      // ===== CASE 2: Guest =====
+      if (!ticketData.phone) {
+        throw new BadRequestException('Guest bắt buộc nhập số điện thoại');
+      }
+
+      const existed = await this.userService.findUserByPhoneNumber(
+        ticketData.phone,
+      );
+
+      if (!existed) {
+        this.validateGuestInfo(ticketData);
+
+        user = await this.userService.createGuest(
+          ticketData.firstName!,
+          ticketData.lastName!,
+          ticketData.email!,
+          ticketData.phone,
+        );
+      } else {
+        if (existed.role !== RoleEnum.GUEST) {
+          throw new BadRequestException(
+            'Số điện thoại đã được đăng ký tài khoản, vui lòng đăng nhập',
+          );
+        }
+
+        await this.userService.updateProfile(
+          {
+            firstName: ticketData.firstName,
+            lastName: ticketData.lastName,
+          },
+          existed.email,
+        );
+
+        user = existed;
+      }
+    }
+
+    // ===== TẠO VÉ =====
+    return this.createTicket(ticketData, user);
   }
 
   async updateTicket(payload: UpdateTicketDTO): Promise<Ticket> {
@@ -233,9 +301,9 @@ export class TicketService {
     const ticket = await this.findTicket(ticketId);
     if (!ticket) throw new NotFoundException('Ticket không tồn tại');
 
-    if (ticket.status === String(TicketStatus.CANCELLED)) return;
+    if (ticket.status === TicketStatus.CANCELLED) return;
 
-    if (ticket.status !== String(TicketStatus.PAID)) {
+    if (ticket.status !== TicketStatus.PAID) {
       await this.ticketRepository.delete({ ticketId });
       return { message: 'Hủy vé thành công' };
     } else {
