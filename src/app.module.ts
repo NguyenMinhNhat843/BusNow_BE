@@ -29,27 +29,23 @@ import { PaymentIntent } from './paymentIntent/paymentIntent.entity';
     }),
 
     // Cấu hình connect Postgre
+    // TypeOrmModule.forRoot({
+    //   type: 'postgres',
+    //   host: process.env.DB_HOST || 'localhost',
+    //   port: 5432,
+    //   username: process.env.DB_USERNAME || 'postgres',
+    //   password: process.env.DB_PASSWORD || '123456789',
+    //   database: process.env.DB_NAME || 'BusNow',
+    //   autoLoadEntities: true,
+    //   synchronize: true, // Chỉ sử dụng trong môi trường phát triển
+    // }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: 5432,
-      username: process.env.DB_USERNAME || 'postgres',
-      password: process.env.DB_PASSWORD || '123456789',
-      database: process.env.DB_NAME || 'BusNow',
+      url: process.env.DATABASE_URL, // 👈 QUAN TRỌNG
       autoLoadEntities: true,
-      synchronize: true, // Chỉ sử dụng trong môi trường phát triển
+      synchronize: true, // ❗ chỉ tạm, lát mình nói
+      ssl: { rejectUnauthorized: false },
     }),
-    // TypeOrmModule.forRootAsync({
-    //   useFactory: () => ({
-    //     type: 'postgres',
-    //     url: process.env.DATABASE_URL, // 👉 SỬ DỤNG URL mà Render cấp
-    //     autoLoadEntities: true,
-    //     synchronize: true, // Đừng bật ở production nếu đã deploy dữ liệu
-    //     ssl: {
-    //       rejectUnauthorized: false, // Render yêu cầu SSL, nhưng không cần CA cert
-    //     },
-    //   }),
-    // }),
     AuthModule,
     UserModule,
     ProviderModule,

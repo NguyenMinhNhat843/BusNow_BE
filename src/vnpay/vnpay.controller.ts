@@ -48,7 +48,6 @@ export class VnpayController {
       req.socket.remoteAddress ||
       '127.0.0.1';
     const user = req.user as User | undefined;
-    console.log(req);
 
     const url = await this.vnpayService.createPaymentUrl(
       dto,
@@ -101,10 +100,16 @@ export class VnpayController {
           TicketStatus.PAID,
         );
         intent.status = PaymentIntentStatus.SUCCESS;
-        return res.send('Thanh toán thành công!');
+        return res.redirect(
+          302,
+          `${process.env.URL_FE}/thanh-toan?status=success`,
+        );
       } else {
         intent.status = PaymentIntentStatus.FAIL;
-        return res.send('Thanh toán thất bại!');
+        return res.redirect(
+          302,
+          `${process.env.URL_FE}/thanh-toan?status=fail`,
+        );
       }
     } else {
       return res.send('Checksum không hợp lệ!');
