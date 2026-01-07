@@ -19,6 +19,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { RedisModule } from './redis/redis.module';
 import { VnpayModule } from './vnpay/vnpay.module';
 import { PaymentIntent } from './paymentIntent/paymentIntent.entity';
+import { BusCompanyRequestModule } from './busCompanyRequest/busCompanyRequest.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { PaymentIntent } from './paymentIntent/paymentIntent.entity';
     RedisModule,
     VnpayModule,
     PaymentIntent,
+    BusCompanyRequestModule,
   ],
   controllers: [],
   providers: [],

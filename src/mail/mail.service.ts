@@ -4,6 +4,7 @@ import { SendTicketEmailDTO } from './dto/sendTicketEmail.dto';
 import * as nodemailer from 'nodemailer';
 import { BankingInfoDTO } from './dto/bankingInfo.dto';
 import { RedisService } from 'src/redis/redis.service';
+import { SendEmailDTO } from './dto/sendEmail';
 
 @Injectable()
 export class MailService {
@@ -17,6 +18,23 @@ export class MailService {
         pass: process.env.GMAIL_ADMIN_PASSWORD,
       },
     });
+  }
+
+  async sendEmail(payload: SendEmailDTO) {
+    const { content, subject, to } = payload;
+
+    const info = await this.transporter.sendMail({
+      from: `"BusNow" <${process.env.GMAIL_ADMIN_USERNAME}>`,
+      to,
+      subject,
+      html: content,
+    });
+
+    return {
+      message: 'Đã gửi mail thành công',
+      messageId: info.messageId,
+      accepted: info.accepted,
+    };
   }
 
   async sendTicketEmail(to: string, order: SendTicketEmailDTO) {
