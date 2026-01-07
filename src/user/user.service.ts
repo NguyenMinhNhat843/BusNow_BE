@@ -3,10 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { CreateUserByGoogleDTO } from './dto/createUserByGoogleDTO';
-import { updateProfileDTO } from './dto/updateProfileDTO';
 import { S3Service } from 'src/s3/s3.service';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { SearchUserDTO } from './dto/searchUserDTO';
+import { UpdateProfileDTO } from './dto/updateProfileDTO';
 
 @Injectable()
 export class UserService {
@@ -144,7 +144,7 @@ export class UserService {
   }
 
   async updateProfile(
-    body: updateProfileDTO,
+    body: UpdateProfileDTO,
     email: string,
     avatarUrl?: string,
   ) {

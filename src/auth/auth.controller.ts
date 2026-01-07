@@ -19,6 +19,7 @@ import { Response } from 'express';
 import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { JwtPayload } from 'jsonwebtoken';
+import { ApiBody, ApiQuery } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -46,6 +47,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @ApiBody({ type: RegisterDTO })
   async register(@Body() body: RegisterDTO) {
     return this.authService.register(body);
   }
@@ -61,6 +63,8 @@ export class AuthController {
   }
 
   @Get('login')
+  @ApiQuery({ name: 'email', type: String, required: true })
+  @ApiQuery({ name: 'password', type: String, required: true })
   async login(
     @Query() param: LoginDTO,
     @Res({ passthrough: true }) res: Response,

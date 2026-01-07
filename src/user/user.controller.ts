@@ -13,13 +13,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { User } from './user.entity';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { updateProfileDTO } from './dto/updateProfileDTO';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { S3Service } from 'src/s3/s3.service';
 import { SearchUserDTO } from './dto/searchUserDTO';
+import { UpdateProfileDTO } from './dto/updateProfileDTO';
+import { ApiBody } from '@nestjs/swagger';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -88,8 +88,9 @@ export class UserController {
   @Put('updateProfile')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
+  @ApiBody({ type: UpdateProfileDTO })
   async updateProfile(
-    @Body() body: updateProfileDTO,
+    @Body() body: UpdateProfileDTO,
     @Req() req: any,
     @UploadedFile() avatar: Express.Multer.File,
   ) {

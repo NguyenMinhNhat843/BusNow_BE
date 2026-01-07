@@ -41,9 +41,9 @@ import { PaymentIntent } from './paymentIntent/paymentIntent.entity';
     // }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DATABASE_URL, // 👈 QUAN TRỌNG
+      url: process.env.DATABASE_URL,
+      synchronize: true,
       autoLoadEntities: true,
-      synchronize: true, // ❗ chỉ tạm, lát mình nói
       ssl: { rejectUnauthorized: false },
     }),
     AuthModule,
