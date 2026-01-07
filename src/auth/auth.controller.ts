@@ -20,10 +20,17 @@ import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { JwtPayload } from 'jsonwebtoken';
 import { ApiBody, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { RolesGuard } from '@/user/guards/roles.guard';
+import { UserService } from '@/user/user.service';
+import { CreateUserDto } from '@/user/dto/createUser.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private userService: UserService,
+  ) {}
 
   @Post('send-otp-register')
   async sendOtpRegister(@Body() body: { email: string }) {
@@ -53,13 +60,11 @@ export class AuthController {
   }
 
   @Post('register-provider')
-  async registerProvider(@Body() body: RegisterProviderDTO) {
-    const response = await this.authService.registerProvider(body);
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.ADMIN]))
+  async registerProvider(@Body() body: CreateUserDto) {
+    const response = await this.userService.createUser(body);
 
-    return {
-      status: 'success',
-      data: response,
-    };
+    return response;
   }
 
   @Get('login')

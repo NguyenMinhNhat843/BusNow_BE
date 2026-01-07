@@ -10,12 +10,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BusCompanyRequestStatus } from './type';
 import { GetListDTO } from './dto/getList.dto';
 import { UpdateBusCompanyRequestDTO } from './dto/updateCompanyRequest.dto';
+import { S3Service } from '@/s3/s3.service';
+import { MailService } from '@/mail/mail.service';
 
 @Injectable()
 export class BusCompanyRequestService {
   constructor(
     @InjectRepository(BusCompanyRequestEntity)
     private busCompanyRequestRepository: Repository<BusCompanyRequestEntity>,
+    private s3Service: S3Service,
+    private mailService: MailService,
   ) {}
 
   async getList(payload: GetListDTO) {
@@ -85,7 +89,10 @@ export class BusCompanyRequestService {
     };
   }
 
-  async createRequest(payload: CreateRequestDTO) {
+  async createRequest(
+    payload: CreateRequestDTO,
+    licenseFile: Express.Multer.File,
+  ) {
     // Check trùng email / phone
     const existed = await this.busCompanyRequestRepository.findOne({
       where: [{ email: payload.email }, { phoneNumber: payload.phoneNumber }],
@@ -97,19 +104,27 @@ export class BusCompanyRequestService {
       );
     }
 
+    if (!licenseFile) {
+      throw new BadRequestException('Thiếu file giấy phép');
+    }
+
+    // Upload S3
+    const licenseFileUrl = await this.s3Service.uploadFile(
+      licenseFile,
+      'bus-company-licenses',
+    );
+
     // Tạo request
     const request = this.busCompanyRequestRepository.create({
       ...payload,
+      licenseFileUrl,
       status: BusCompanyRequestStatus.PENDING,
     });
 
     // Lưu DB
     const saved = await this.busCompanyRequestRepository.save(request);
 
-    return {
-      message: 'Gửi yêu cầu đăng ký nhà xe thành công',
-      data: saved,
-    };
+    return saved;
   }
 
   async updateBusComanyRequest(

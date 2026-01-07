@@ -6,35 +6,44 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CreateRequestDTO } from './dto/createRequest.dto';
-import { BusCompanyRequestService } from './busCOmpanyRequest.service';
 import { GetListDTO } from './dto/getList.dto';
 import { UpdateBusCompanyRequestDTO } from './dto/updateCompanyRequest.dto';
 import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { RolesGuard } from '@/user/guards/roles.guard';
 import { User } from '@/user/user.entity';
+import { BusCompanyRequestService } from './busCompanyRequest.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('bus-company-requests')
-@UseGuards(JwtAuthGuard, new RolesGuard(['admin']))
 export class BusCompanyRequestController {
   constructor(
     private readonly busCompanyRequestService: BusCompanyRequestService,
   ) {}
 
   @Post()
-  create(@Body() payload: CreateRequestDTO) {
-    return this.busCompanyRequestService.createRequest(payload);
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('licenseFile'))
+  create(
+    @Body() payload: CreateRequestDTO,
+    @UploadedFile() licenseFile: Express.Multer.File,
+  ) {
+    return this.busCompanyRequestService.createRequest(payload, licenseFile);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, new RolesGuard(['admin']))
   getList(@Query() query: GetListDTO) {
     return this.busCompanyRequestService.getList(query);
   }
 
   @Patch()
+  @UseGuards(JwtAuthGuard, new RolesGuard(['admin']))
   update(@Body() payload: UpdateBusCompanyRequestDTO, @Req() req: Request) {
     const user = ((req as any).user as User) || null;
     const adminId = user.userId;

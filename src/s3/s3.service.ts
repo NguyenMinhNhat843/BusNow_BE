@@ -20,7 +20,7 @@ export class S3Service {
   });
 
   async uploadFile(file: Express.Multer.File, folder = 'user') {
-    const fileExt = path.extname(file.originalname as string); // đuôi mở rộng của file
+    const fileExt = path.extname(file.originalname); // đuôi mở rộng của file
     const fileName = crypto.randomBytes(16).toString('hex') + fileExt; // tên file + đuôi
     const filePath = `${folder}/${fileName}`;
 

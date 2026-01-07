@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
@@ -7,6 +12,8 @@ import { S3Service } from 'src/s3/s3.service';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 import { SearchUserDTO } from './dto/searchUserDTO';
 import { UpdateProfileDTO } from './dto/updateProfileDTO';
+import { CreateUserDto } from './dto/createUser.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -32,6 +39,41 @@ export class UserService {
     return await this.userRepo.save(user);
   }
 
+  async createUser(dto: CreateUserDto): Promise<User> {
+    const { email, phoneNumber, password, role = RoleEnum.USER, ...rest } = dto;
+
+    // Check email tồn tại
+    const existedEmail = await this.userRepo.findOne({
+      where: { email },
+    });
+    if (existedEmail) {
+      throw new ConflictException('Email đã tồn tại');
+    }
+
+    // Check phone tồn tại (nếu có)
+    if (phoneNumber) {
+      const existedPhone = await this.userRepo.findOne({
+        where: { phoneNumber },
+      });
+      if (existedPhone) {
+        throw new ConflictException('Số điện thoại đã tồn tại');
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = this.userRepo.create({
+      ...rest,
+      email,
+      phoneNumber,
+      password: hashedPassword,
+      role,
+      birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+    });
+
+    return this.userRepo.save(user);
+  }
   async findOrcreateUserByGoogle(data: CreateUserByGoogleDTO) {
     let user = await this.userRepo.findOneBy({ email: data.email });
     if (!user) {

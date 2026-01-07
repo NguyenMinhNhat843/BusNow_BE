@@ -7,7 +7,6 @@ import * as bcrypt from 'bcrypt';
 import { LoginDTO } from './dto/LoginDTO';
 import { JwtService } from '@nestjs/jwt';
 import * as nodemailer from 'nodemailer';
-import { Subject } from 'rxjs';
 import { RegisterProviderDTO } from './dto/RegisterProviderDTO';
 import { RoleEnum } from 'src/common/enum/RoleEnum';
 
