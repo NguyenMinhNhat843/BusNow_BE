@@ -53,6 +53,17 @@ export class ticketController {
     return await this.ticketService.searchTicket(body);
   }
 
+  @Get('my-ticket')
+  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
+  async getMyTicket(@Req() req: any, @Query() query: searchTicketDTO) {
+    const phoneNumber = req.user.phoneNumber as string;
+    // return await this.ticketService.findTicketByPhone(phoneNumber);
+    return await this.ticketService.searchTicket({
+      phone: phoneNumber,
+      ...query,
+    });
+  }
+
   @Put('cancle-ticket')
   @UseGuards(OptionalJwtAuthGuard)
   async cancleTicket(@Body() body: CancleTicketDTO, @Req() req: Request) {
@@ -71,13 +82,6 @@ export class ticketController {
   @Delete(':id')
   async deleteTicket(@Param('id') id: string) {
     return await this.ticketService.deleteTicket(id);
-  }
-
-  @Get('my-ticket')
-  @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
-  async getMyTicket(@Req() req: any) {
-    const phoneNumber = req.user.phoneNumber as string;
-    return await this.ticketService.findTicketByPhone(phoneNumber);
   }
 
   @Post('filter-ticket')

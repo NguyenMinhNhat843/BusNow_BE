@@ -4,13 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { Ticket } from './ticket.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTIcketDTO } from './dto/createTicketDTO';
 import { Seat } from 'src/seat/seat.entity';
 import { User } from 'src/user/user.entity';
-import { StopPointService } from 'src/stopPoint/stopPoint.service';
 import { TripService } from 'src/trip/trip.service';
 import { SeatService } from 'src/seat/seat.service';
 import { Payment } from 'src/payment/payment.entity';
@@ -25,10 +24,11 @@ import { UpdateTicketDTO } from './dto/updateTicketDTO';
 import { searchTicketDTO } from './dto/searchTicketDTO';
 import { CancleTicketDTO } from './dto/cancleTicketDTO';
 import { ConfirmCancleTicketDTO } from './dto/confirmCancleTicketDTO';
-import { TicketStatus } from './type';
+import { TicketStatus, TicketUsedStatus } from './type';
 import { Trip } from '@/trip/trip.entity';
 import { RoleEnum } from '@/common/enum/RoleEnum';
 import { UserService } from '@/user/user.service';
+import { now } from 'moment';
 
 @Injectable()
 export class TicketService {
@@ -240,62 +240,6 @@ export class TicketService {
     return ticket;
   }
 
-  async searchTicket(payload: searchTicketDTO) {
-    const { limit = 10, page = 1, ticketId } = payload;
-
-    const where: any = {};
-    if (ticketId) where.ticketId = ticketId;
-
-    const [data, total] = await this.ticketRepository.findAndCount({
-      where,
-      relations: {
-        user: true,
-        seat: true,
-        trip: {
-          vehicle: {
-            route: {
-              origin: true,
-              destination: true,
-            },
-            provider: true,
-          },
-        },
-        payment: true,
-        cancellationRequest: true,
-      },
-      take: limit,
-      skip: (page - 1) * limit,
-      order: { createdAt: 'DESC' },
-    });
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async findTicket(ticketId: string) {
-    const result = await this.ticketRepository
-      .createQueryBuilder('ticket')
-      .leftJoinAndSelect('ticket.user', 'user')
-      .leftJoinAndSelect('ticket.trip', 'trip')
-      .leftJoinAndSelect('ticket.seat', 'seat')
-      .leftJoinAndSelect('ticket.payment', 'payment')
-      .leftJoinAndSelect('trip.vehicle', 'vehicle')
-      .leftJoinAndSelect('vehicle.route', 'route')
-      .leftJoinAndSelect('route.origin', 'origin')
-      .leftJoinAndSelect('route.destination', 'destination')
-      .leftJoinAndSelect('vehicle.provider', 'provider')
-      .where('ticket.ticketId = :ticketId', { ticketId })
-      .getOne();
-    return result;
-  }
-
   async cancleTicket(payload: CancleTicketDTO, userId: string) {
     const { ticketId, bankingInfo } = payload;
     const ticket = await this.findTicket(ticketId);
@@ -384,6 +328,65 @@ export class TicketService {
     return await this.ticketRepository.delete({
       ticketId: id,
     });
+  }
+
+  async searchTicket(payload: searchTicketDTO) {
+    const { limit = 10, page = 1, ticketId, status } = payload;
+
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.trip', 'trip')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('route.destination', 'destination')
+      .leftJoinAndSelect('route.origin', 'origin')
+      .leftJoinAndSelect('vehicle.provider', 'provider')
+      .leftJoinAndSelect('ticket.payment', 'payment')
+      .leftJoinAndSelect('ticket.cancellationRequest', 'cancellationRequest');
+
+    if (ticketId) {
+      query.andWhere('ticket.ticketId = :ticketId', { ticketId });
+    }
+
+    if (status === TicketUsedStatus.USED) {
+      query.andWhere('trip.departDate < :now', { now: new Date() });
+    } else if (status === TicketUsedStatus.NOT_USED) {
+      query.andWhere('trip.departDate > :now', { now: new Date() });
+    }
+
+    query
+      .orderBy('ticket.createdAt', 'DESC')
+      .take(limit)
+      .skip((page - 1) * limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data: data.map((ticket) => ({
+        ...ticket,
+        used: ticket.trip?.departDate < new Date(),
+      })),
+      total,
+    };
+  }
+
+  async findTicket(ticketId: string) {
+    const result = await this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.user', 'user')
+      .leftJoinAndSelect('ticket.trip', 'trip')
+      .leftJoinAndSelect('ticket.seat', 'seat')
+      .leftJoinAndSelect('ticket.payment', 'payment')
+      .leftJoinAndSelect('trip.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.route', 'route')
+      .leftJoinAndSelect('route.origin', 'origin')
+      .leftJoinAndSelect('route.destination', 'destination')
+      .leftJoinAndSelect('vehicle.provider', 'provider')
+      .where('ticket.ticketId = :ticketId', { ticketId })
+      .getOne();
+    return result;
   }
 
   async getListTicketByUserId(userId: string) {
