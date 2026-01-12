@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Brackets, Repository } from 'typeorm';
+import { Between, Brackets, Repository } from 'typeorm';
 import { Trip } from './trip.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createTripDTO } from './dto/createTripDTO';
@@ -82,32 +82,25 @@ export class TripService {
       maxPrice,
       sortBy,
     } = data;
-
     // Kiểm tra location from có tồn tại ko
-    const from =
-      await this.locationService.findLocationByNameOrId(fromLocationId);
-    if (!from) {
+    const [from, to] = await Promise.all([
+      this.locationService.findLocationByNameOrId(fromLocationId),
+      this.locationService.findLocationByNameOrId(toLocationId),
+    ]);
+    if (!from || !to) {
       throw new NotFoundException(
-        'Địa điểm khởi hành không tồn tại trong hệ thống!!',
+        'Địa điểm khởi hành hoặc đến không tồn tại trong hệ thống!!',
       );
     }
-
-    // kiểm tra to có tồn tại ko
-    const to = await this.locationService.findLocationByNameOrId(toLocationId);
-    if (!to) {
-      throw new NotFoundException(
-        'Địa điểm đến không tồn tại trong hệ thống!!',
-      );
-    }
-
-    // Vì trong pg đang là giờ UTC nên sẽ lấy giwof UTC só sánh
-    const startTime = new Date(departTime);
-    const endTime = new Date(departTime);
-    endTime.setHours(23, 59, 59, 99);
+    // Tạo khoảng thời gian trong ngày
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    // kiểm tra departTime > now
+    const startTime =
+      new Date(departTime).toDateString() === now.toDateString()
+        ? now
+        : new Date(departTime);
+    const endTime = new Date(departTime);
+    endTime.setHours(23, 59, 59, 999);
+    // kiểm tra departTime hợp lệ
     if (startTime < now) {
       throw new BadRequestException(
         'Thời gian khởi hành phải lớn hơn thời gian hiện tại!!',
@@ -116,7 +109,7 @@ export class TripService {
 
     // query trips
     const query = this.tripRepository
-      .createQueryBuilder('trip') // trip là alias: bí danh
+      .createQueryBuilder('trip')
       .leftJoinAndSelect('trip.vehicle', 'v')
       .leftJoinAndSelect('v.route', 'r')
       .leftJoinAndSelect('v.provider', 'provider')
@@ -168,10 +161,6 @@ export class TripService {
         query.orderBy('trip.departDate', 'DESC');
         break;
     }
-
-    // const [sql, params] = query.getQueryAndParameters();
-    // console.log('Query:', sql);
-    // console.log('Params:', params);
 
     // phân trang
     const [results, total] = await query
@@ -245,36 +234,6 @@ export class TripService {
       );
     }
 
-    // Kiểm tra địa điểm hiện tại của xe có đúng là điểm khởi hành không
-    // Kiểm tra thời gian khởi hành phải >= ariveTime của chuyến đi trước đó
-    // const lastTrip = await this.tripRepository.findOne({
-    //   where: {
-    //     vehicle: { code: data.vehicleCodeNumber },
-    //   },
-    // });
-    // if (lastTrip) {
-    //   if (
-    //     data.fromLocationName.trim().toLowerCase() !==
-    //     lastTrip.toLocationName.trim().toLowerCase()
-    //   ) {
-    //     throw new BadRequestException(
-    //       `Phương tiện ${vehicle.code} hiện đang ở ${lastTrip.toLocationName}, không thể tạo chuyến đi từ ${data.fromLocationName}!!`,
-    //     );
-    //   }
-
-    //   // Cho tài xế nghỉ 8 tiếng trước khi bắt đầu chuyến mới
-    //   const minNextDepartTime = new Date(
-    //     arriveTime.getTime() + 8 * 60 * 60 * 1000,
-    //   ); // 8 tiếng sau
-    //   const dtoDepartTime = new Date(data.departTime);
-
-    //   if (dtoDepartTime < minNextDepartTime) {
-    //     throw new BadRequestException(
-    //       `Tài xế phải nghỉ ít nhất 8 giờ. Chuyến tiếp theo phải bắt đầu sau ${minNextDepartTime.toLocaleString()}.`,
-    //     );
-    //   }
-    // }
-
     // tạo trip
     const tripData = {
       price: data.price,
@@ -294,98 +253,90 @@ export class TripService {
     return trip;
   }
 
+  private buildDepartDate(date: Date, hour: string): Date {
+    return new Date(`${format(date, 'yyyy-MM-dd')}T${hour}:00`);
+  }
+
   // generate trip theo trước 1 khaongr thời gian
   async genTrip(data: GenTripDTO) {
-    // kiểm tra vehicleId có tồn tại không
     const vehicle = await this.vehicleRepository.findOne({
-      where: {
-        vehicleId: data.vehicleId,
-      },
-      relations: ['route', 'route.origin', 'route.destination'],
+      where: { vehicleId: data.vehicleId },
+      relations: ['route'],
     });
     if (!vehicle) {
       throw new NotFoundException('Vehicle không tồn tại');
     }
-
-    // Kiểm tra vehicle được gán route vào chưa
     if (!vehicle.route) {
-      throw new NotFoundException('Vehicle này chưa được gán tuyến đường');
+      throw new NotFoundException('Vehicle chưa được gán tuyến đường');
     }
-
-    //Kiểm tra vehicle đã cso departHour cố định chưa
     if (!vehicle.departHour) {
-      throw new NotFoundException('Xe chưa gán giờ khởi hành cố định');
+      throw new NotFoundException('Xe chưa có giờ khởi hành cố định');
     }
 
-    // Lấy repeatsDay ra để tính toán lên lịch
-    const { repeatsDay } = vehicle.route;
-    const createdTrips: Trip[] = [];
-    const returnTrips: Trip[] = [];
+    const { route, departHour, totalSeat } = vehicle;
+    const { repeatsDay, duration, restAtDestination } = route;
 
-    // Lấy ngày hiện tại làm gốc
     const startTime = data.startTime ? new Date(data.startTime) : new Date();
     const endTime = new Date(data.endTime);
+
     if (startTime > endTime) {
       throw new BadRequestException('Thời gian end phải lớn hơn start');
     }
 
+    const tripsToCreate: Trip[] = [];
+    const returnTripsToCreate: Trip[] = [];
+
+    // Lấy toàn bộ trip đã tồn tại trong khoảng thời gian
+    const existedTrips = await this.tripRepository.find({
+      where: {
+        vehicle: { vehicleId: vehicle.vehicleId },
+        departDate: Between(startTime, endTime),
+      },
+      select: ['departDate'],
+    });
+
+    const existedDepartSet = new Set(
+      existedTrips.map((t) => new Date(t.departDate).getTime()),
+    );
+
     for (
-      let curent = new Date(startTime);
-      curent <= endTime;
-      curent = addDays(curent, repeatsDay)
+      let current = new Date(startTime);
+      current <= endTime;
+      current = addDays(current, repeatsDay)
     ) {
-      // Gộp ngày (ở trên) với giờ (cố định trong vehicle)
-      const fullDepartDate = new Date(
-        `${format(curent, 'yyyy-MM-dd')}T${vehicle.departHour}:00`,
-      );
+      const departDate = this.buildDepartDate(current, departHour);
 
-      // 🔍 Kiểm tra nếu trip đã tồn tại (theo vehicle và departDate)
-      const existed = await this.tripRepository.findOne({
-        where: {
-          vehicle: { vehicleId: vehicle.vehicleId },
-          departDate: fullDepartDate,
-        },
-      });
+      if (existedDepartSet.has(departDate.getTime())) continue;
 
-      if (existed) continue; // bỏ qua nếu đã tồn tại
-
-      // Taoj trip
+      // Tạo trip đi
       const trip = this.tripRepository.create({
         price: data.price,
-        availabelSeat: vehicle.totalSeat,
+        availabelSeat: totalSeat,
         vehicle,
-        departDate: fullDepartDate.toISOString(),
+        departDate,
+        type: 'go',
       });
-      createdTrips.push(trip);
 
-      // ============== Tạo tiếp trip chiều về ===================
-      // CHuyến về vẫn sẽ dùng route đó nhưng khác departDate - giwof khởi hành thôi
-      const restAtDestination = vehicle.route.restAtDestination;
-      const duration = vehicle.route.duration;
-      // = deprtDate của trip + duration + rest
-      const returnDepartDate = addHours(
-        fullDepartDate,
-        duration + restAtDestination,
-      );
-
+      // Tạo trip về
       const returnTrip = this.tripRepository.create({
         price: data.price,
-        availabelSeat: vehicle.totalSeat,
+        availabelSeat: totalSeat,
         vehicle,
-        departDate: returnDepartDate.toISOString(),
+        departDate: addHours(departDate, duration + restAtDestination),
         type: 'return',
       });
-      returnTrips.push(returnTrip);
+
+      tripsToCreate.push(trip);
+      returnTripsToCreate.push(returnTrip);
     }
 
-    await this.tripRepository.save(createdTrips);
-    await this.tripRepository.save(returnTrips);
+    await this.tripRepository.save([...tripsToCreate, ...returnTripsToCreate]);
 
     return {
       status: 'success',
-      message: `${createdTrips.length} chuyến đã được tạo thành công`,
-      trips: createdTrips,
-      returnTrips: returnTrips,
+      message: `${tripsToCreate.length} chuyến đã được tạo thành công`,
+      trips: tripsToCreate,
+      returnTrips: returnTripsToCreate,
     };
   }
 

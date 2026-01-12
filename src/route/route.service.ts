@@ -37,14 +37,21 @@ export class RouteService {
       stopPointIds = [],
     } = dto;
 
-    const existingRoute = await this.routeRepo.findOne({
-      where: {
-        origin: { locationId: originId },
-        destination: { locationId: destinationId },
-        provider: { userId: providerId },
-      },
-      relations: ['origin', 'destination', 'provider'],
-    });
+    const existingRoute = await this.routeRepo
+      .createQueryBuilder('route')
+      .leftJoin('route.origin', 'origin')
+      .leftJoin('route.destination', 'destination')
+      .leftJoin('route.provider', 'provider')
+      .where('provider.userId = :providerId', { providerId })
+      .andWhere(
+        `(
+      (origin.locationId = :originId AND destination.locationId = :destinationId)
+      OR
+      (origin.locationId = :destinationId AND destination.locationId = :originId)
+    )`,
+        { originId, destinationId },
+      )
+      .getOne();
 
     if (existingRoute) {
       throw new BadRequestException('Route này đã tồn tại cho nhà xe của bạn');

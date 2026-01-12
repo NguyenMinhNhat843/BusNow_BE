@@ -57,7 +57,6 @@ export class ticketController {
   @UseGuards(JwtAuthGuard, new RolesGuard([RoleEnum.USER]))
   async getMyTicket(@Req() req: any, @Query() query: searchTicketDTO) {
     const phoneNumber = req.user.phoneNumber as string;
-    // return await this.ticketService.findTicketByPhone(phoneNumber);
     return await this.ticketService.searchTicket({
       phone: phoneNumber,
       ...query,

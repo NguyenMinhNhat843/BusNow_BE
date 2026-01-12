@@ -364,10 +364,17 @@ export class TicketService {
     const [data, total] = await query.getManyAndCount();
 
     return {
-      data: data.map((ticket) => ({
-        ...ticket,
-        used: ticket.trip?.departDate < new Date(),
-      })),
+      data: data.map((ticket) => {
+        console.log(new Date());
+        console.log(ticket.trip?.departDate);
+        return {
+          ...ticket,
+          used:
+            ticket.trip?.departDate &&
+            new Date(ticket.trip.departDate).toISOString().slice(0, 10) <
+              new Date().toISOString().slice(0, 10),
+        };
+      }),
       total,
     };
   }

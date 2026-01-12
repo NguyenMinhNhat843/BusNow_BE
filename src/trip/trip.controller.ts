@@ -61,6 +61,7 @@ export class TripController {
         toName: trip.vehicle.route.destination.name,
         arriveTime: arriveTime,
         type: trip.type,
+        avatar: trip.vehicle.provider.avatar,
       };
     });
 
