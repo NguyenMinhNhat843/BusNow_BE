@@ -9,13 +9,23 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { TicketUsedStatus } from '../type';
+import { TicketStatus, TicketUsedStatus } from '../type';
 
 export class searchTicketDTO {
   @IsUUID()
   @ApiPropertyOptional()
   @IsOptional()
   ticketId?: string;
+
+  @IsUUID()
+  @ApiPropertyOptional()
+  @IsOptional()
+  providerId?: string;
+
+  @IsPhoneNumber('VN')
+  @ApiPropertyOptional()
+  @IsOptional()
+  providerPhone?: string;
 
   @IsInt()
   @ApiPropertyOptional()
@@ -33,11 +43,29 @@ export class searchTicketDTO {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsPhoneNumber('VN')
   phone?: string;
 
   @IsEnum(TicketUsedStatus)
   @ApiPropertyOptional({ enum: TicketUsedStatus })
   @IsOptional()
   status?: TicketUsedStatus;
+
+  @IsUUID()
+  @ApiPropertyOptional()
+  @IsOptional()
+  vehicleId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  vehicleCode?: string;
+
+  @IsUUID()
+  @ApiPropertyOptional()
+  @IsOptional()
+  tripId?: string;
+
+  @IsEnum(TicketStatus)
+  @ApiPropertyOptional({ enum: TicketStatus })
+  @IsOptional()
+  statusPayment?: TicketStatus;
 }

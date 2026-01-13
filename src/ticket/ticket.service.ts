@@ -331,7 +331,21 @@ export class TicketService {
   }
 
   async searchTicket(payload: searchTicketDTO) {
-    const { limit = 10, page = 1, ticketId, status } = payload;
+    const {
+      limit = 10,
+      page = 1,
+      ticketId,
+      status,
+      tripId,
+      phone,
+      vehicleId,
+      vehicleCode,
+      providerId,
+      providerPhone,
+      statusPayment,
+    } = payload;
+
+    const now = new Date();
 
     const query = this.ticketRepository
       .createQueryBuilder('ticket')
@@ -346,14 +360,55 @@ export class TicketService {
       .leftJoinAndSelect('ticket.payment', 'payment')
       .leftJoinAndSelect('ticket.cancellationRequest', 'cancellationRequest');
 
-    if (ticketId) {
+    // search theo ticketId
+    if (ticketId && ticketId.trim() !== '') {
       query.andWhere('ticket.ticketId = :ticketId', { ticketId });
     }
 
+    // search theo phone (user)
+    if (phone && phone.trim() !== '') {
+      query.andWhere('user.phoneNumber LIKE :phone', {
+        phone: `%${phone}%`,
+      });
+    }
+
+    // search theo tripId
+    if (tripId && tripId.trim() !== '') {
+      query.andWhere('trip.tripId = :tripId', { tripId });
+    }
+
+    // search theo vehicleId
+    if (vehicleId && vehicleId.trim() !== '') {
+      query.andWhere('vehicle.vehicleId = :vehicleId', { vehicleId });
+    }
+
+    // search theo vehicleCode
+    if (vehicleCode && vehicleCode.trim() !== '') {
+      query.andWhere('vehicle.code = :vehicleCode', { vehicleCode });
+    }
+
+    // search theo providerId
+    if (providerId && providerId.trim() !== '') {
+      query.andWhere('provider.userId = :providerId', { providerId });
+    }
+
+    // search theo providerPhone
+    if (providerPhone && providerPhone.trim() !== '') {
+      query.andWhere('provider.phoneNumber LIKE :providerPhone', {
+        providerPhone: `%${providerPhone}%`,
+      });
+    }
+
+    // filter theo trạng thái payment
+    if (statusPayment) {
+      query.andWhere('ticket.status = :statusPayment', { statusPayment });
+    }
+
+    // filter trạng thái USED / NOT_USED theo thời gian
     if (status === TicketUsedStatus.USED) {
-      query.andWhere('trip.departDate < :now', { now: new Date() });
+      query.andWhere('trip.departDate < :now', { now });
     } else if (status === TicketUsedStatus.NOT_USED) {
-      query.andWhere('trip.departDate > :now', { now: new Date() });
+      query.andWhere('trip.departDate >= :now', { now });
     }
 
     query
@@ -364,17 +419,13 @@ export class TicketService {
     const [data, total] = await query.getManyAndCount();
 
     return {
-      data: data.map((ticket) => {
-        console.log(new Date());
-        console.log(ticket.trip?.departDate);
-        return {
-          ...ticket,
-          used:
-            ticket.trip?.departDate &&
-            new Date(ticket.trip.departDate).toISOString().slice(0, 10) <
-              new Date().toISOString().slice(0, 10),
-        };
-      }),
+      data: data.map((ticket) => ({
+        ...ticket,
+        used:
+          !!ticket.trip?.departDate &&
+          new Date(ticket.trip.departDate).toISOString().slice(0, 10) <
+            now.toISOString().slice(0, 10),
+      })),
       total,
     };
   }
